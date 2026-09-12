@@ -1,0 +1,34 @@
+{
+  "schema_version": "0.9",
+  "id": "CHG-XXXX",
+  "title": "Replace with concise accepted outcome",
+  "risk": "L2",
+  "result": "accepted",
+  "accepted_at": "YYYY-MM-DD",
+  "version_control": {
+    "system": "git",
+    "base_revision": "replace-with-full-git-revision",
+    "checkpoint_revision": null,
+    "result_revision": "replace-with-full-git-revision",
+    "branch": null,
+    "worktree": "clean",
+    "remote_status": "local-only"
+  },
+  "input_refs": [
+    "replace-with-existing-need-and-design-input-owner"
+  ],
+  "decision_refs": [
+    "replace-with-human-decision-and-acceptance-owner"
+  ],
+  "verification_refs": [
+    "replace-with-revision-bound-verification-owner"
+  ],
+  "validation_refs": [
+    "replace-with-intended-use-validation-owner"
+  ],
+  "review_refs": [
+    "replace-with-reviewed-diff-and-disposition-owner"
+  ],
+  "updated_owners": [],
+  "disposition": "Replace with scoped document update/no-update, method-use, limitation and residual-risk disposition; link existing details instead of duplicating them."
+}

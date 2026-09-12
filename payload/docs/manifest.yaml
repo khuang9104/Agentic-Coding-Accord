@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.4",
+  "structure": "accord-project-knowledge",
+  "status": "draft",
+  "knowledge_root": "docs",
+  "source_content_included": false,
+  "observed_revision": null,
+  "observed_worktree": "unknown",
+  "observed_at": null,
+  "last_reviewed_at": null,
+  "module_inventory_basis": "Initial repository discovery is pending.",
+  "known_gaps": [],
+  "documents": [
+    "README.md",
+    "agent-context.md",
+    "system-overview.md",
+    "architecture.md",
+    "interfaces-and-data.md",
+    "glossary.md",
+    "modules/README.md"
+  ],
+  "modules": [],
+  "scopes": [],
+  "engineering": {
+    "schema_version": "1.1",
+    "documents": [],
+    "contracts": [],
+    "coverage": {
+      "status": "not-assessed",
+      "reviewed_modules": [],
+      "inventory_complete": false,
+      "scope": [],
+      "inventory": [],
+      "gaps": []
+    },
+    "reconstruction": {
+      "status": "not-run",
+      "current_run": null,
+      "scope": [],
+      "evidence": []
+    }
+  }
+}
