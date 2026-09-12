@@ -1,0 +1,31 @@
+name: User feedback
+description: Share an experience or usability observation.
+title: "[Feedback]: "
+labels:
+  - feedback
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: What were you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: experience
+    attributes:
+      label: What worked or did not work?
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Agent host
+      placeholder: e.g. Codex, GitHub Copilot in VS Code
+    validations:
+      required: false
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+    validations:
+      required: false
