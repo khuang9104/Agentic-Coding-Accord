@@ -73,6 +73,12 @@ See the [installation and update guide](CONFIGURE_WITH_AGENT.md) for manual
 copying, version tracking, conflict handling and migration. Copying `payload/`
 alone does not complete configuration.
 
+**Optional Copilot plugin:** install the [project setup entry](plugins/agentic-coding-accord/README.md)
+from this repository's marketplace. It pins a tested Accord distribution and
+supports setup, local version checks and project updates. Updating the plugin
+does not update project files; ask it to update the project and verify the merge.
+The prompt-based installation above remains available to both Codex and Copilot.
+
 ### 2. Start with a normal project request
 
 No new slash commands are required. For example:

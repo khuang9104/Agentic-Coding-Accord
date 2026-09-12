@@ -62,6 +62,11 @@ Agent 会合并 Codex 与 Copilot 的入口指令、配置 Accord、检查已有
 手动复制、版本追踪、冲突处理和旧版迁移见[安装与更新指南](CONFIGURE_WITH_AGENT.md#中文)。
 仅复制 `payload/` 并不代表配置完成。
 
+**可选 Copilot 插件：** 可以从本仓库的插件目录安装
+[项目配置入口](plugins/agentic-coding-accord/README.md)，使用固定的已测试发布版本
+初始化、检查或更新项目。插件升级不会自动改动项目；请再让 Agent 更新项目并验证合并结果。
+上面的 Prompt 安装方式仍适用于 Codex 和 Copilot。
+
 ### 2. 用正常的项目请求开始
 
 不需要记忆新的斜杠命令。例如：
