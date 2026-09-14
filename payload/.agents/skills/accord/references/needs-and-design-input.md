@@ -27,14 +27,16 @@ existing implementation into a user requirement without human confirmation.
 
 ## Align intent before expanding requirements
 
-Read the current request first, then inspect the smallest relevant repository
-facts. Summarize, in outcome language:
+Read the request before the smallest relevant repository facts. Distinguish the
+desired outcome, a user-chosen solution, and your own assumptions. Briefly state
+the intended change and preserve boundaries; do not force a discovery report
+onto a clear local request.
 
-1. the direct request and problem being solved;
-2. the intended user, use context, and observable target outcome;
-3. the current state and the requested target state;
-4. explicit preserve instructions and non-goals; and
-5. the recommended interpretation plus any genuine uncertainty.
+For exploratory work, test the proposed solution against a concrete failure or
+boundary scenario. Offer a better alternative and its trade-off when evidence
+supports one, not a quota of options. A user-specified technology or behavior
+is a constraint, not permission to substitute your preference. Once the user
+chooses, stop debating it unless new evidence changes a material premise.
 
 Calibrate the interaction:
 
@@ -48,8 +50,33 @@ Calibrate the interaction:
 - for a conflict with an approved input, state what appears to change and why,
   instead of treating the old input as a veto.
 
-Infer everything supported by the request and repository. Ask only what cannot
-be inferred reliably and would change observable behavior or acceptance.
+Separate missing facts from undecided choices. Look up available facts instead
+of asking the user to inspect their code or configuration; disclose unavailable
+evidence rather than guessing. Within the existing question budget, prioritize
+choices that unblock others, explain your recommendation and its consequence,
+and defer questions whose answers depend on unresolved prerequisites. Reuse
+settled decisions; do not persist a decision tree or hold unaffected authorized
+work for unrelated questions.
+
+When a business term is ambiguous, use an actor, precondition, action and result
+to distinguish its meanings. Test only relevant normal, boundary, failure or
+recovery scenarios against data, states, interfaces and module responsibilities.
+For example, order cancellation may require distinguishing an accepted request
+from a completed refund; do not invent a refund requirement where none applies.
+When an asynchronous operation or external result controls a user-visible state
+or a shared/irreversible side effect, explicitly resolve its completion
+condition, side-effect timing, and failure/retry or manual-handling outcome
+before implementation. `async`, `queued`, or `pending` alone does not settle
+those choices; if they remain open, ask one focused Decision Frontier question
+and keep unaffected work moving.
+Turn settled scenarios into observable input/result conditions and prohibited
+outcomes. Hypothetical examples remain proposals until the material rule is
+decided; current code describes behavior, not necessarily the requested target.
+
+Stop clarification when the material choices needed for the current scope and
+acceptance are resolved. Equivalent implementation details stay with the Agent;
+future features do not require exhaustive interviews or another final approval.
+Deeper stress-testing is appropriate when requested, not a default extra phase.
 
 ## Reconcile the baseline
 

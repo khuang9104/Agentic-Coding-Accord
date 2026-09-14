@@ -34,6 +34,12 @@ coverage percentages. Start with focused fast checks; include relevant boundary,
 failure, state/recovery and cross-module scenarios. Expand when impact or
 failures justify it. Do not require CI or a GitHub remote for local evidence.
 
+During implementation, check each meaningful behavior slice before building on
+it. Test-first is useful at agreed, testable boundaries; it does not require a
+new framework or a separate approval round. Slice checks do not replace final
+impact-based integration and V&V; neither must the full suite run after every
+small edit. Reuse valid evidence only while its observed inputs remain valid.
+
 ## Design and execution boundaries
 
 - Map each material check to approved input IDs or intended-use scenarios,

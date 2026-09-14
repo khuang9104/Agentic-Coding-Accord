@@ -45,12 +45,30 @@ Record the base revision; L3-L4 also require a recoverable checkpoint.
 
 ## Implement
 
-Stay inside approved scope and compare work with the recorded base. If a new
-material need, contract, risk, or trade-off appears, pause the affected work,
-record the proposal or question, assess impact and recovery, and return through
-intent alignment and Design Input Ready. A test or implementation that reflects
-superseded behavior is an affected output to update after approval, not product
-authority over the current human direction.
+Understand the affected flow, contracts and consumers before choosing a solution;
+reuse a sufficient current Context Map. Check existing implementations, standard
+library/platform capabilities and installed dependencies before adding code or
+abstractions. Choose the simplest sufficient solution, not the fewest lines or
+files. Preserve explicit requirements, safety, error handling and necessary
+checks; a mature existing dependency can be safer than a short custom substitute.
+Stop searching once the approved behavior and maintenance constraints are met.
+
+For substantial work, follow actual dependencies through small, verifiable
+behavior slices. Identify the next expected result, implement its necessary
+contracts and consumers, run focused checks, then revise or continue. A slice
+can span files; a small task is already one slice. Reuse the existing plan and
+evidence owners, without per-slice IDs, approvals or commits. A refactor may
+retain its safe migration sequence rather than manufacture feature slices.
+
+Compare results with approved inputs and the recorded base. An implementation
+defect with an unchanged target needs repair within existing authority, not a
+new requirements interview. Check the causal boundary and affected callers,
+not only the reported symptom, without turning repair into unrelated cleanup.
+If a new material need, contract, risk or trade-off appears, pause only affected
+work, record the question and return through intent alignment and Design Input
+Ready. Retain unaffected decisions and valid evidence. Superseded tests are
+outputs to revise after approval, never grounds to veto the current direction
+or silently change expectations to obtain a pass.
 
 Use Work Units only for real parallel execution. Each has exclusive paths, a
 base, dependencies, expected evidence, and integration order.

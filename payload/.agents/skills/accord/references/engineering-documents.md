@@ -29,6 +29,14 @@ and **known deviation**. Never infer approval from legacy code, or describe an
 approved but unimplemented change as existing behavior. Record useful decisions
 and unresolved issues, not raw conversation, repeated summaries or speculation.
 
+Within authorized documentation work, batch stable discussion conclusions into
+their existing owners instead of writing every exchange. Keep terminology in
+the current glossary; behavior-defining rules belong to their requirement or
+contract owner and are referenced elsewhere. Retain meaningful trade-off reasons,
+not a separate ADR for every choice. A reopened choice changes the affected
+current status/text rather than appending conflicting versions. Consultation
+alone does not authorize persistent records or a second context document system.
+
 ## Required depth, not a required file pack
 
 For each applicable inventory item, supply the following information or an
