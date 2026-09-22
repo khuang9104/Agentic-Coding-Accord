@@ -4,21 +4,20 @@
 
 **A human-directed framework for agentic software engineering.**
 
-Accord connects user intent, design inputs, implementation and verification
-and validation (V&V) through a repository-local harness. You and the Agent
-clarify what to build; you own material decisions and acceptance, while the
-Agent analyzes, implements and gathers evidence within the agreed scope.
-Project documentation keeps those decisions and implemented details available
+Accord gives coding agents a shared engineering workflow inside your repository:
+clarify user needs, agree on design inputs, implement, and review against those
+inputs and needs through verification and validation (V&V). You own material
+decisions and acceptance; the Agent analyzes, implements and gathers evidence.
+Maintained project documentation connects those decisions to the actual design
 for later development, handover and knowledge-base queries.
 
 Works with **Codex and GitHub Copilot in VS Code**. Distributed as instructions,
 templates and local scripts—not another coding agent, installer or hosted service.
 
-> Accord currently targets development led by one human decision-maker. It can
-> be used in shared Git repositories, but does not yet provide full multi-person
-> decision-making or team governance. These capabilities are being explored and
-> may arrive as an Accord extension or a separate project; scope and timing
-> remain undecided.
+> Accord works in shared Git/GitHub repositories: engineering rules and project
+> documents travel with the code, alongside your branch, PR and review workflow.
+> Its decision process still assumes one accountable human lead. Multi-person
+> approvals, consensus handling and team configuration are not yet implemented.
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Project knowledge](#project-documentation-and-knowledge) · [Included methods](#awesome-copilot-methods)
 
@@ -62,8 +61,9 @@ Report the old/new version, source commit, changes, check results and
 remaining actions. Do not report a partial update as complete.
 ```
 
-The Agent merges the Codex and Copilot entry blocks, configures Accord, checks
-existing coding practices, and generates or refreshes the project's documentation.
+The Agent merges the Codex and Copilot entry blocks, configures Accord and checks
+existing coding practices. Initial setup builds a project documentation view
+from existing sources; updates preserve it and refresh only affected content.
 It asks before Git initialization, commits or dependency installation unless
 you have already authorized those actions. Generated facts still need review.
 
@@ -79,6 +79,8 @@ alone does not complete configuration.
 from this repository's marketplace. It pins a tested Accord distribution and
 supports setup, local version checks and project updates. Updating the plugin
 does not update project files; ask it to update the project and verify the merge.
+Its pinned distribution may lag behind the default branch; request a specific
+official revision if needed. See [release metadata](RELEASE.json) for this checkout's version.
 The prompt-based installation above remains available to both Codex and Copilot.
 
 ### 2. Start with a normal project request
@@ -162,6 +164,11 @@ Short entry instructions route both agents to the same workflow. Procedures,
 module details and method packets load when relevant; completed history is not
 default context. Git supplies version control, diffs and recovery—not another
 approval workflow. Accepting work does not force a commit or push.
+
+For parallel work, Accord calls for explicit write scopes, a shared base and an
+integration order, using branches or worktrees where useful. GitHub permissions,
+required reviews and merge protection remain repository settings—not controls
+enforced by Accord. A PR approval does not automatically update Accord's decision records.
 
 This approach combines established requirements engineering and V&V with
 current work on human–agent collaboration and harness design. Related reading:
@@ -254,15 +261,22 @@ automatically accumulate in the main instructions.
 
 ## Checks and boundaries
 
-From an adopted project, inspect the installed version or run a full audit:
+From an adopted project, inspect the installed version:
 
 ```sh
 node .agents/skills/accord/scripts/accord-adoption.mjs --mode status --project .
-node .agents/skills/accord/scripts/accord-validate.mjs --project . --scope audit
 ```
 
-Normal work uses narrower installation, task or delivery checks. Results
-distinguish what was checked from what remains outside scope.
+Normal work uses scoped installation, task or delivery checks. The Agent selects
+the relevant Change and modules and reports what was checked or omitted. Status
+alone is not installation verification; use the [update guide](CONFIGURE_WITH_AGENT.md)
+for complete file and provenance checks.
+
+For an explicit full audit, including historical records:
+
+```sh
+node .agents/skills/accord/scripts/accord-validate.mjs --project . --scope audit
+```
 
 Accord is an instruction-based harness, not a runtime security boundary.
 Checks cannot prove that an Agent understood the user, that documents are
