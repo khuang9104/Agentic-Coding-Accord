@@ -34,6 +34,8 @@ Load only matching procedures; none adds another plan or approval round.
 Keep prompt scaffolding, temporary reasoning, and execution narration out of
 canonical sources. The active Change retains only durable scope, decisions,
 questions, references, and evidence needed to govern or review the work.
+Persist consequential settled decisions when they are needed for continued
+work; batch derived documentation at meaningful boundaries, not every message.
 
 Treat conflicts with existing records as candidate deltas, not automatic
 blockers. Ask the human only about unresolved Decision Frontier choices. Human
@@ -46,7 +48,12 @@ Record the base revision; L3-L4 also require a recoverable checkpoint.
 ## Implement
 
 Understand the affected flow, contracts and consumers before choosing a solution;
-reuse a sufficient current Context Map. Check existing implementations, standard
+reuse a sufficient current Context Map. An internal implementation change within
+approved guarantees proceeds under existing authority. An explicitly requested
+boundary change supplies that delta; ask only about uncovered material choices.
+Use the boundary-impact procedure in `engineering-documents.md` for interface,
+state, shared-data or side-effect changes, including unchanged signatures.
+Check existing implementations, standard
 library/platform capabilities and installed dependencies before adding code or
 abstractions. Choose the simplest sufficient solution, not the fewest lines or
 files. Preserve explicit requirements, safety, error handling and necessary
@@ -131,5 +138,6 @@ Use `accord-validate.mjs --scope task --change CHG-ID` during work, adding
 for method checks. Use `--scope delivery` for that same scope before handoff.
 Without modules, knowledge content is explicitly not checked. Installation
 checks and historical `--scope audit` are separate; no arguments retains the
-legacy full-audit default. Historical 0.8 Records use their original reader;
+legacy full-audit default, so always specify task/delivery for routine work.
+Historical 0.8 Records use their original reader;
 migrate only the active Change when adopting 0.9 semantics.

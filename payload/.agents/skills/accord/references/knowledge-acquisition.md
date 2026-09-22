@@ -143,6 +143,11 @@ Change:
 
 Do not claim to have found “all relevant files.” Report the explored boundary
 and remaining gaps.
+For changed module guarantees, apply the boundary-impact procedure in
+`engineering-documents.md`: forward dependencies explain a module, reverse
+consumers reveal who may break. Reuse that result instead of building a second
+map for documentation. Candidate modules are inspection scope, not mandatory
+document edits; prune only with evidence of an unchanged behavioral boundary.
 
 Stop expanding the context map when the requested knowledge or Change can be
 supported at the required depth by identified owners, contracts, evidence, and
@@ -220,8 +225,9 @@ copying them into project knowledge.
   claiming that the whole project is committed or reviewed; see
   `engineering-documents.md`.
 
-Refresh `agent-context.md` alongside affected detailed documents and review them
-together. Keep a compact project map, verified working commands, relevant
+Refresh `agent-context.md` only when its summarized facts or required observation
+references change, alongside the affected detailed owners. Keep a compact
+project map, verified working commands, relevant
 boundaries and links; link long command inventories rather than duplicating
 them. Unverified commands remain explicitly unknown. A targeted Context Map
 lives in the active Change (or the response for read-only work); normal Record

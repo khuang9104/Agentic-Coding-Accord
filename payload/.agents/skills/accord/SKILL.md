@@ -22,9 +22,10 @@ Treat one requested outcome across messages as one work unit. Additions preserve
 unfinished goals; explicit replacements supersede only their affected scope.
 Before material work, identify the outcome and preserve boundaries; inspect Git
 and read `.accord/accord.yaml`, the applicable Change and configured practices,
-then affected sources. Reuse decisions, context and method packets while their
-scope, content and dependencies remain valid. A new message or unrelated commit
-does not reset them. No extra session log is required.
+then affected sources. Reuse decisions while scope and material premises hold;
+reuse context while relevant sources hold, and test evidence only while its
+implementation, checks and environment still match. A new message or unrelated
+commit resets none of these. No extra session log is required.
 
 Read only matching procedures, completely:
 
@@ -90,11 +91,10 @@ record applicable inputs, outputs, fields, enums, state rules and actual design.
 Separate approved targets, observed behavior and deviations. Do not duplicate
 full source, canonical inputs or V&V.
 
-Use registered paths and real module boundaries; update affected owners in
-place or explain no update. Git and Records retain history.
-Knowledge 1.4 supports module commit/worktree observations alongside global
-review state. Freshness, completeness and reconstruction are separate claims;
-see the engineering contract. Soft budgets never justify missing facts.
+Reuse contract owners; check consumers and dependencies with
+`references/engineering-documents.md`. Update changed facts, not every inspected
+document. Git retains history. Freshness, coverage and reconstruction are
+separate claims; soft budgets never justify missing facts.
 
 Use the route procedure; classify first. Docs/knowledge generation or broad
 refresh must run `accord-route --intent ...` and satisfy its contributions:
@@ -126,12 +126,10 @@ are in `references/change-lifecycle.md`.
 
 Mechanical checks do not prove intent, facts, V&V sufficiency or human acceptance.
 
-At delivery, synchronize changed facts in their existing owners and report
-evidence, limitations and residual risk. Git writes follow existing authority;
-push is separate. Human acceptance, commit and archive are distinct. If the
-user defers commit, retain the Change as `awaiting-archive` with observed worktree
-evidence; never invent a result SHA. After the result commit exists, create a
-0.9 reference Record. Old 0.8 Records remain readable without rewriting history.
+At delivery, synchronize affected owners and report evidence and limitations.
+Acceptance, commit and archive are distinct. Deferred commit retains an
+`awaiting-archive` Change and worktree evidence, never an invented SHA. After
+commit, use the lifecycle's reference Record; preserve legacy history.
 
 ## Context budget
 

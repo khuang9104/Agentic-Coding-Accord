@@ -31,6 +31,8 @@ project knowledge aligned takes more than a chat history.
   and trade-offs with the Agent; unresolved material choices stay with you.
 - **Review against the right target.** Link user needs and approved design
   inputs to verification and validation (V&V), not just a passing test suite.
+- **Keep modules aligned.** Define inputs, guarantees and failure behavior;
+  check affected consumers when a boundary changes.
 - **Keep useful project knowledge.** Record architecture, module behavior,
   interfaces and data contracts; update affected sections when the system changes.
 - **Carry the workflow with the project.** Shared instructions, coding practices
@@ -123,6 +125,21 @@ New or changed requirements return only the affected decisions to this flow.
 Old documents and tests describe the baseline; they do not overrule a deliberate
 change in user direction. Small, reversible edits use proportionate checks
 rather than the full material-change process.
+
+### Module boundaries
+
+Contracts describe what a module requires and guarantees, including relevant
+errors, state changes and side effects. The Agent can change the implementation
+within those boundaries, using existing schemas, types and tests rather than
+creating a new document pack.
+
+For a boundary change, Accord guides the Agent to inspect consumers as well as
+dependencies. A local helper identifies candidates from the declared module
+graph; source inspection and tests establish the actual impact. Missing links
+remain gaps, not proof of compatibility. Unchanged decisions are reused, and
+documents change only when their facts change.
+
+[Boundary and impact procedure](payload/.agents/skills/accord/references/engineering-documents.md#module-boundaries-during-a-change)
 
 ### The harness
 
