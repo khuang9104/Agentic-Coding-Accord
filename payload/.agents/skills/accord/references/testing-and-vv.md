@@ -38,7 +38,12 @@ During implementation, check each meaningful behavior slice before building on
 it. Test-first is useful at agreed, testable boundaries; it does not require a
 new framework or a separate approval round. Slice checks do not replace final
 impact-based integration and V&V; neither must the full suite run after every
-small edit. Reuse valid evidence only while its observed inputs remain valid.
+small edit. Reuse evidence only while the relevant implementation, assertions,
+fixtures, configuration, dependencies and execution environment still match.
+An unrelated commit does not invalidate it; unchanged source alone cannot prove
+environment equivalence. If that basis is unavailable, rerun the affected check
+or report it unavailable, not passed. Passing schema/artifact comparisons do not
+prove provider/consumer runtime compatibility.
 
 ## Design and execution boundaries
 
@@ -58,6 +63,10 @@ small edit. Reuse valid evidence only while its observed inputs remain valid.
   demonstrate the relevant failure before repair when feasible and safe; otherwise
   record why that evidence is missing. Do not derive assertions only from current
   output, weaken them, skip a failing test or change requirements to obtain green.
+  When implementation and tests change together, review changed expectations
+  against the approved input independently of the new output. Contract changes
+  need affected consumer checks and representative integrated scenarios; mocks
+  alone cannot establish that the real pair interoperates.
 - Bound waits and retries. Preserve the first failure and report intermittent
   outcomes; a successful retry does not erase an earlier failure. Distinguish a
   product defect from test-harness and environment failures. Stop repeating an

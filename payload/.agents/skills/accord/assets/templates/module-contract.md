@@ -1,31 +1,35 @@
 # Module Contract
 
-Create this source only for a stable, public, independently owned, separately
-released, data-owning, parallel, or risky module boundary.
+Reuse an existing owner first. Create this source only for a stable, public,
+independently maintained, separately released, shared-data or risky boundary.
+A short contract may stay in a module page. Keep only applicable content;
+link exact schemas/types and existing V&V instead of copying them. Distinguish
+approved target, observed implementation and unresolved differences.
 
 ## Purpose and Boundary
 
 - Responsibility:
-- Consumers and dependencies:
+- Provider, consumers and dependencies (including unknown external users):
 - Included and excluded behavior:
 - Allocated requirements:
 
 ## Interface and Behavior
 
-- Inputs and outputs:
+- Input conditions and output guarantees (including units and completion):
 - API, event, file, or protocol contracts:
 - State and invariants:
-- Error, cancellation, recovery, and concurrency behavior:
+- Errors, cancellation, retry/idempotency, side effects and concurrency:
 
 ## Data and Quality
 
 - Owned data, schema, migration, and retention:
-- Performance and resource constraints:
+- Required performance/resource floors and measurement conditions:
 - Security, permissions, privacy, and compatibility:
 - Observability and operational behavior:
 
-## Verification
+## Evidence references
 
-| Input reference | Contract/design element | Revision/checkpoint | Evidence |
-| --- | --- | --- | --- |
-| REQ/IF/DATA/RISK/OPS-* | Link exact boundary | Commit hash or pending | Test, analysis, review, or inspection |
+Link approved input IDs, provider/consumer checks and integrated scenarios in
+the existing V&V owner. Results, revisions and limitations belong there, not in
+a second test log. No passing test or unchanged signature establishes every
+behavioral guarantee.

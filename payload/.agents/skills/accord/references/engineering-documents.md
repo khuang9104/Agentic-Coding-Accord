@@ -37,9 +37,60 @@ not a separate ADR for every choice. A reopened choice changes the affected
 current status/text rather than appending conflicting versions. Consultation
 alone does not authorize persistent records or a second context document system.
 
-## Required depth, not a required file pack
+## Module boundaries during a change
 
-For each applicable inventory item, supply the following information or an
+Reuse an existing module-contract owner, schema/type definition and tests.
+Use `assets/templates/module-contract.md` only when a stable, public, shared-data,
+independently maintained or risky boundary needs an owner. A short contract can
+stay in an existing module page; do not create a file per function or populate
+unrelated headings. Exact definitions have one executable owner; explanations
+add meaning and link it. V&V results stay in their existing owner.
+
+For the affected interaction, establish provider/consumers, input conditions,
+output guarantees, errors and applicable state/side-effect constraints. Include
+units, completion timing, retry/idempotency, permissions and quality floors when
+they affect observable behavior. An unchanged signature is not proof of an
+unchanged contract. Implementation may be opaque to callers, not exempt from
+security, consistency review or relevant integration tests.
+
+Use a sufficient current Context Map; otherwise:
+
+1. Identify the changed guarantee, current target/actual difference and exact
+   owner. A user-approved delta replaces old target wording without another
+   approval of unchanged requirements.
+2. Find consumers as well as dependencies. With knowledge 1.4, use the read-only
+   candidate helper below against the configured manifest path (JSON-compatible
+   YAML). It follows reverse dependencies, then adds forward context; export's
+   `--modules` selection continues to follow only forward dependencies.
+3. Inspect direct consumers first. Expand along changed guarantees; prune a
+   candidate only with an observed unchanged boundary, not a file-name guess.
+   Check dynamic calls, events, shared storage/configuration and external users
+   where relevant. Missing mappings are unknown, not evidence of no consumers.
+4. Keep scope, necessary checks and any unresolved gaps in the existing Change.
+   Feed the justified module set to task/delivery validation; do not treat the
+   candidate list as a compulsory documentation refresh or a semantic pass.
+
+```sh
+node .agents/skills/accord/scripts/accord-scope.mjs --project . --impact-modules payments --manifest docs/manifest.yaml
+```
+
+The helper reads declared relationships, not source or freshness. Exit 0 means
+`declared`, not complete/correct; exit 2 reports inventory gaps or draft, missing or gapped mappings,
+including elsewhere in the inventory that might hide consumers; exit 1 means
+invalid input. Investigate relevant gaps without blocking unrelated authorized
+work. Legacy/missing metadata permits bounded source inspection with disclosed
+limits, not mandatory whole-project migration. Tests and source discovery are
+still needed even when no graph gaps are declared.
+
+A single release unit may update both sides together. Introduce compatibility
+or a migration period only for real consumers, stored data, independent releases
+or an agreed promise. Preserve required performance/security floors; optimize
+internals from measurements without silently changing the boundary.
+
+## Required depth for documentation work, not a required file pack
+
+During initial documentation, substantial refresh or handover, for each
+applicable inventory item supply the following information or an
 explicit scoped gap/not-applicable basis. A heading alone is not evidence.
 
 | Item | Content needed without source access |

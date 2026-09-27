@@ -77,6 +77,11 @@ Stop clarification when the material choices needed for the current scope and
 acceptance are resolved. Equivalent implementation details stay with the Agent;
 future features do not require exhaustive interviews or another final approval.
 Deeper stress-testing is appropriate when requested, not a default extra phase.
+Missing historical documentation is not a request to rebuild it: establish only
+the affected boundary needed for safe work. Inspect available facts yourself;
+do not turn an internal rewrite into a requirements interview. Preserve any
+already agreed quality floor; further optimization follows measured need, not
+speculation about future model capabilities.
 
 ## Reconcile the baseline
 
@@ -107,8 +112,9 @@ After alignment, draft only the dimensions material to the Change:
 For each material dimension, provide repository evidence, a recommended
 default, or an explicit gap. Explore adjacent consequences and viable options,
 but label them as required now, recommended, optional, or not applicable. Do
-not invent a requirement to fill a checklist. A dimension is not applicable
-only with a stated basis. Ask only questions that cross the Decision Frontier,
+not invent a requirement to fill a checklist. One scoped basis may cover
+irrelevant dimensions; omit empty sections instead of asking the user to fill
+them. Ask only questions that cross the Decision Frontier,
 using the labels and question budget in `risk-and-authority.md`.
 
 A changed need records the approved User Need and Design Input delta, affected

@@ -10,6 +10,8 @@ Use the highest triggered semantic impact, not file type or an average:
 | L3 | Cross-module architecture, public contract, schema, migration, security, permission, or material compatibility change. |
 | L4 | Irreversible or high-consequence production, financial, safety, regulatory, credential, or destructive action. |
 
+Reading or testing several modules does not itself make a change L3; classify
+the changed guarantee and its consequences, not file count or traversal depth.
 Compatibility is material only when existing consumers, stored data,
 deployments, or an agreed promise require it. Record a reason when it is not
 applicable.

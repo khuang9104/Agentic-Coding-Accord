@@ -38,6 +38,8 @@ checked unaffected boundaries. Reuse the map while its inputs remain valid.
 Name affected documentation owners and changed facts; one scoped no-update
 basis may cover all unchanged owners. Add architecture, compatibility, security,
 recovery or parallel-work analysis only where triggered.
+For a changed guarantee include provider/consumers, relevant gaps and the basis
+for stopping propagation. Checked modules do not all need document edits.
 
 ### Capability Use
 
