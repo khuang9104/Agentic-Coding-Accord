@@ -2,7 +2,7 @@
 
 Use this procedure when Git is missing, the directory is not a repository, a
 baseline or checkpoint is needed, work is parallel, or recovery is requested.
-Accord authority and the active Change remain controlling.
+Accord authority and the selected work carrier remain controlling.
 
 ## Inspect
 
@@ -27,7 +27,7 @@ content when claiming the current files are the committed version.
 
 | Risk | Git control |
 | --- | --- |
-| L0 | Review the diff; no Change or commit required. |
+| L0 | Review the diff; no work item or commit required. |
 | L1 | Focused checks; propose a commit only when it is a useful recovery point. |
 | L2 | Record the approved base; propose checkpoint and acceptance commits. |
 | L3 | Require an approved base and recoverable checkpoint before execution. |
@@ -55,6 +55,7 @@ human.
 
 Implementation, V&V, human acceptance, commit, push and archive are distinct
 facts. If the user defers commit, preserve worktree evidence (base plus scoped
-content digest), accepted scope and pending archive in the current Change.
+content digest), accepted scope and pending commit in the selected work carrier.
 Do not stage/commit to satisfy a template. Once the matching result commit
-exists, archive through the Record; its own commit may follow later.
+exists, link it from that carrier. Git retains previous versions; no additional
+Record is created.

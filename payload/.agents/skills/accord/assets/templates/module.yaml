@@ -1,0 +1,11 @@
+{
+  "id": "example-module",
+  "parent": null,
+  "kinds": ["module"],
+  "source_paths": [],
+  "depends_on": [],
+  "status": "draft",
+  "gaps": ["Register real source responsibilities, document owners and consumer relationships before claiming coverage."],
+  "not_applicable": [],
+  "documents": []
+}

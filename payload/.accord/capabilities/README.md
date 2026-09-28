@@ -1,7 +1,7 @@
 # Accord Capability Layer
 
 Optional capabilities are bounded workers, not workflow authorities. Accord,
-the active Change, approved Design Inputs, V&V, and human decisions retain
+the selected work carrier, approved Design Inputs, V&V, and human decisions retain
 precedence. A reviewed candidate is not installed, enabled, or recommended for
 this project merely because it is present here.
 
@@ -9,7 +9,8 @@ this project merely because it is present here.
 
 - `routes.yaml` schema 1.3 defaults to seven methods on nine task routes, including
   existing-stack V&V and bounded browser testing. Load only justified methods.
-  Schemas 1.0–1.2 keep their reviewed bindings until an approved upgrade.
+  Retired route schemas require migration before use. Output owners come from
+  the current knowledge registry and request, not a mandatory document pack.
 - `catalog/index.yaml` is the small discovery index. Read it only after an
   explicit Skill request or a demonstrated capability gap.
 - `catalog/entries/<id>.yaml` contains the review packet for one candidate.
@@ -79,12 +80,12 @@ Skill's matching procedure: `accord-route.mjs` selects the
 route and loads its methods from the verified offline bundle. The Agent applies
 the methods and reports evidence, rather than treating selection as use. Knowledge
 acquisition uses Accord's bounded inventory and source-cited architecture
-method; Change context uses bounded context mapping. `project-documenter` is an
+method; Work context uses bounded context mapping. `project-documenter` is an
 optional presentation worker only and cannot create a competing canonical
 knowledge structure. The document-writing, bug-reproduction and refactor-planning
 adapters preserve requested outputs and existing authority; their null output
 root and empty output lists prescribe no new files and grant no arbitrary
-write scope. Plans and reproduction evidence use an existing Change or the
+write scope. Plans and reproduction evidence use the selected work carrier or the
 response, with links to tests and evidence where appropriate.
 
 Testing uses `references/testing-and-vv.md`: ordinary project tests need no
@@ -99,7 +100,7 @@ remain candidates, never permission, until the Agent classifies them and selects
 justified `--intent` values.
 
 User-installed Skills are not moved, disabled, rewritten, updated, removed, or
-auto-registered. When one materially contributes to a Change, record its role,
+auto-registered. When one materially contributes to a work item, record its role,
 outputs, limitations, and known provenance. Offer managed adoption only if the
 user wants a pinned, portable project copy.
 

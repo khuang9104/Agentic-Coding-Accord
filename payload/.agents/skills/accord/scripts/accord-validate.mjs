@@ -5,14 +5,13 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { readAndVerifyCapabilityBundle } from './accord-capability-bundle.mjs';
 import { validateRouteConfig, inspectRouteMethods, readRouteMethods } from './accord-route.mjs';
-import { validateEngineeringManifest, validateEngineeringSources } from './accord-engineering.mjs';
 import { inspectInstallation } from './accord-adoption.mjs';
 import { parseExactJson, safeContractPath } from './accord-contracts.mjs';
 import { CAPABILITY_POLICY } from './accord-methods.mjs';
-import { selectModuleScope } from './accord-scope.mjs';
-import { CONFIG_SCHEMA, PROTOCOL_VERSION, CHANGE_SCHEMA, RECORD_SCHEMAS, KNOWLEDGE_SCHEMAS,
-  RISK_LEVELS, MATERIAL_RISKS, CHANGE_STATUSES, AUTHORIZED_STAGES, EXECUTING_STAGES,
-  DELIVERY_STAGES, VALIDATION_SCOPES, KNOWLEDGE_DOCUMENTS, BUDGET_KEYS, validateMethodUse } from './accord-protocol.mjs';
+import { loadProjectModel, validateProjectKnowledge, readJson, relativePath } from './accord-project.mjs';
+import { validateGovernancePolicy, POLICY_PATH } from './accord-governance.mjs';
+import { validateWorkItem, indexLocalWork } from './accord-work.mjs';
+import { CONFIG_SCHEMA, PROTOCOL_VERSION, RISK_LEVELS, MATERIAL_RISKS, VALIDATION_SCOPES, BUDGET_KEYS } from './accord-protocol.mjs';
 
 const ACCORD_SCHEMA_VERSION = CONFIG_SCHEMA;
 const ACCORD_VERSION = PROTOCOL_VERSION;
@@ -22,8 +21,6 @@ const CAPABILITY_CATALOG_INDEX = '.accord/capabilities/catalog/index.yaml';
 const CAPABILITY_CATALOG_EXPORT = '.accord/capabilities/catalog.yaml';
 const CAPABILITY_REGISTRY = '.accord/capabilities/registry.yaml';
 const CAPABILITY_ROUTES = '.accord/capabilities/routes.yaml';
-const REQUIRED_KNOWLEDGE_DOCUMENTS = KNOWLEDGE_DOCUMENTS;
-const POST_DESIGN_STATUSES = new Set(['design-input-ready', ...AUTHORIZED_STAGES]);
 
 function runGit(cwd, args) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
@@ -110,24 +107,17 @@ export function verifyConfiguration(config, errors) {
     return;
   }
 
-  if (config.schema_version !== ACCORD_SCHEMA_VERSION) {
-    if (['0.6', '0.7'].includes(config.schema_version)) {
-      errors.push(
-        'Accord ' + config.schema_version +
-        ' configuration requires reviewed migration to ' + ACCORD_SCHEMA_VERSION +
-        '; it was not rewritten automatically.'
-      );
-    } else {
-      errors.push('Expected schema_version ' + ACCORD_SCHEMA_VERSION + '.');
-    }
-  }
-
-  if (config.accord?.version !== ACCORD_VERSION) {
-    errors.push('Expected accord.version ' + ACCORD_VERSION + '.');
-  }
+  if (config.schema_version !== ACCORD_SCHEMA_VERSION) errors.push('Migrate configuration to schema ' + ACCORD_SCHEMA_VERSION + ' before use.');
+  if (config.accord?.version !== ACCORD_VERSION) errors.push('Expected accord.version ' + ACCORD_VERSION + '.');
 
   if (config.accord?.release !== undefined && !/^\d+\.\d+\.\d+$/.test(config.accord.release)) {
     errors.push('Expected accord.release to be a semantic release version.');
+  }
+
+  if (config.schema_version === '0.9') {
+    try { relativePath(config.documentation?.policy); relativePath(config.work?.local_directory); }
+    catch (e) { errors.push(e.message); }
+    if (config.governance?.policy !== POLICY_PATH || !['github-preferred', 'local'].includes(config.work?.carrier)) errors.push('Configuration 0.9 requires versioned governance and an explicit work carrier.');
   }
 
   if (!['compact', 'standard', 'assurance'].includes(config.information?.profile)) {
@@ -147,7 +137,7 @@ export function verifyConfiguration(config, errors) {
   }
 
   if (!['manual', 'propose'].includes(config.version_control?.commit_mode)) {
-    errors.push('version_control.commit_mode must be manual or propose; automatic commits are not defined by Accord 0.8.');
+    errors.push('version_control.commit_mode must be manual or propose; automatic commits are not defined by Accord.');
   }
 
   if (config.version_control?.push_mode !== 'explicit') {
@@ -179,11 +169,10 @@ export function verifyConfiguration(config, errors) {
       errors.push('knowledge_base.' + key + ' must be ' + JSON.stringify(expected) + '.');
     }
   }
-  if (!KNOWLEDGE_SCHEMAS.has(config.knowledge_base?.structure_version)) {
-    errors.push('knowledge_base.structure_version must be a supported 1.2–1.4 version after reviewed migration.');
-  }
-  if (!['assumption-first', 'intent-aligned'].includes(config.clarification?.mode)) {
-    errors.push('clarification.mode must be intent-aligned (or legacy assumption-first); neither approves assumptions.');
+  if (config.knowledge_base?.structure_version !== '2.0') errors.push('Migrate knowledge to 2.0 before use.');
+  if (config.sources?.engineering !== undefined || config.changes !== undefined || config.records !== undefined) errors.push('Remove retired engineering/Change/Record configuration after migration.');
+  if (config.clarification?.mode !== 'intent-aligned') {
+    errors.push('clarification.mode must be intent-aligned; assumptions do not grant approval.');
   }
   const inventory = config.knowledge_base?.inventory;
   if (inventory?.respect_gitignore !== true) {
@@ -519,7 +508,7 @@ function verifyCapabilities(projectRoot, config, agents, copilot, errors, warnin
   if (!registry) {
     return trackedPaths;
   }
-  if (!['1.0', '1.1'].includes(registry.schema_version) || registry.registry !== 'accord-project-capabilities') {
+  if (registry.schema_version !== '1.1' || registry.registry !== 'accord-project-capabilities') {
     errors.push('Accord capability registry identity or schema_version is invalid.');
   }
 
@@ -661,749 +650,15 @@ function loadKnowledgeManifest(projectRoot, errors) {
   }
 }
 
-function knowledgeProvenancePaths(contents) {
-  const provenance = contents.split('## Provenance')[1] || '';
-  return [...provenance.matchAll(/^\|\s*`([^`]+)`\s*\|/gm)]
-    .map((match) => match[1].trim())
-    .filter(Boolean);
-}
-
-function hasTemplateProvenancePlaceholder(contents) {
-  return contents.includes('replace/with/project/path');
-}
-
-const FIXED_KNOWLEDGE_SECTIONS = {
-  'README.md': ['Status and Scope', 'Document Map', 'Answering Rules', 'Knowledge-base Export'],
-  'agent-context.md': ['Current project map', 'Working commands', 'Change hotspots', 'Retrieval rules'],
-  'system-overview.md': ['Purpose and Intended Use', 'Major Capabilities', 'System Boundary', 'Key Scenarios', 'Current Limitations'],
-  'architecture.md': ['System Context', 'Architectural Overview', 'Runtime and Deployment Topology', 'Key Flows', 'Working Commands and Entry Points', 'Architectural Decisions and Constraints', 'Extension and Change Boundaries'],
-  'interfaces-and-data.md': ['External Interfaces', 'Internal Interfaces', 'Data Stores and Ownership', 'Data Flows', 'Interface Versions and Consumers'],
-  'glossary.md': ['Domain Terms', 'Technical Terms', 'Acronyms and Identifiers', 'Naming Notes'],
-  'modules/README.md': ['Module Inventory', 'Selection Basis', 'Dependency Overview']
-};
-
-function knowledgeSectionBody(contents, heading) {
-  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const start = contents.search(new RegExp('^##\\s+' + escaped + '\\s*$', 'mi'));
-  if (start < 0) return null;
-  const bodyStart = contents.indexOf('\n', start);
-  if (bodyStart < 0) return '';
-  const remainder = contents.slice(bodyStart + 1);
-  const next = remainder.search(/^##\s+/mi);
-  return (next < 0 ? remainder : remainder.slice(0, next)).trim();
-}
-
-function verifyFixedKnowledgeShape(relativePath, contents, errors) {
-  const relativeDocument = relativePath.replace(/^docs\//, '');
-  const required = FIXED_KNOWLEDGE_SECTIONS[relativeDocument];
-  if (!required) return;
-  for (const heading of required) {
-    const body = knowledgeSectionBody(contents, heading);
-    if (body === null) {
-      errors.push('Current project knowledge document is missing required section "' + heading + '": ' + relativePath);
-    } else if (!body.trim()) {
-      errors.push('Current project knowledge document has an empty section "' + heading + '": ' + relativePath);
-    }
-  }
-}
-
-function isManagedDocumentationPath(relativePath, modules = [], engineering = null) {
-  return relativePath === KNOWLEDGE_MANIFEST ||
-    REQUIRED_KNOWLEDGE_DOCUMENTS.some((document) => relativePath === KNOWLEDGE_ROOT + '/' + document) ||
-    modules.some((id) => relativePath === KNOWLEDGE_ROOT + '/modules/' + id + '.md') ||
-    (Array.isArray(engineering?.documents) && engineering.documents.some(entry => entry?.path === relativePath)) ||
-    (Array.isArray(engineering?.contracts) && engineering.contracts.some(entry => entry?.artifact === relativePath));
-}
-
-function isControlPlaneEvidence(relativePath) {
-  return relativePath === '.git' || relativePath.startsWith('.git/') ||
-    relativePath === '.accord' || relativePath.startsWith('.accord/') ||
-    relativePath === '.agents' || relativePath.startsWith('.agents/') ||
-    relativePath === '.github/skills' || relativePath.startsWith('.github/skills/') ||
-    relativePath === 'vendor' || relativePath.startsWith('vendor/');
-}
-
 function verifyKnowledgeBase(projectRoot, config, agents, copilot, errors, warnings, requestedModules = null) {
-  if (!config || config.knowledge_base?.required !== true) {
-    return [];
-  }
-
-  const trackedPaths = [KNOWLEDGE_MANIFEST];
-  const manifest = loadKnowledgeManifest(projectRoot, errors);
-  if (!manifest) return trackedPaths;
-  let selected = null;
-  if (requestedModules?.length) {
-    try { selected = selectModuleScope(manifest, requestedModules); }
-    catch (error) { errors.push(error.message); return trackedPaths; }
-  }
-  const knowledgeContents = new Map();
-  const templateProvenancePlaceholders = [];
-  for (const relativeDocument of selected ? [] : REQUIRED_KNOWLEDGE_DOCUMENTS) {
-    const relativePath = KNOWLEDGE_ROOT + '/' + relativeDocument;
-    const absolutePath = path.join(projectRoot, relativePath);
-    if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
-      errors.push('Missing required project knowledge document: ' + relativePath);
-    } else {
-      const contents = fs.readFileSync(absolutePath, 'utf8');
-      knowledgeContents.set(relativePath, contents);
-      if (hasTemplateProvenancePlaceholder(contents)) templateProvenancePlaceholders.push(relativePath);
-      if (!contents.includes('## Provenance')) {
-        errors.push('Project knowledge document is missing a Provenance section: ' + relativePath);
-      }
-      const budget = config.knowledge_base?.size_budgets?.[relativeDocument];
-      if (Number.isInteger(budget) && contents.length > budget) {
-        warnings.push(
-          'Project knowledge document exceeds its soft size budget (' +
-          contents.length + ' > ' + budget + ' characters): ' + relativePath
-        );
-      }
-    }
-    trackedPaths.push(relativePath);
-  }
-
-  if (!KNOWLEDGE_SCHEMAS.has(manifest.schema_version)) {
-    errors.push('Project knowledge manifest schema_version must be supported (1.2–1.4).');
-  }
-  if (manifest.schema_version !== config.knowledge_base?.structure_version) {
-    errors.push('Knowledge manifest and configured structure versions must match.');
-  }
-  if (manifest.structure !== 'accord-project-knowledge') {
-    errors.push('Project knowledge manifest structure must be accord-project-knowledge.');
-  }
-  if (manifest.knowledge_root !== KNOWLEDGE_ROOT) {
-    errors.push('Project documentation manifest knowledge_root must be docs.');
-  }
-  if (manifest.source_content_included !== false) {
-    errors.push('Project knowledge manifest source_content_included must be false.');
-  }
-  if (!['draft', 'current'].includes(manifest.status)) {
-    errors.push('Project knowledge manifest status must be draft or current.');
-  } else if (manifest.status === 'draft') {
-    warnings.push(
-      'Project knowledge manifest is draft. Report its gaps and do not present it as reviewed project truth.'
-    );
-  } else {
-    if (typeof manifest.last_reviewed_at !== 'string' || !manifest.last_reviewed_at.trim()) {
-      errors.push('A current project knowledge manifest requires last_reviewed_at.');
-    }
-    if (!/^[0-9a-f]{40}$/i.test(manifest.observed_revision || '')) {
-      errors.push('A current project knowledge manifest requires a full observed_revision.');
-    }
-    if (manifest.observed_worktree !== 'clean') {
-      errors.push('A current project knowledge manifest requires observed_worktree clean.');
-    }
-    if (typeof manifest.observed_at !== 'string' || !manifest.observed_at.trim()) {
-      errors.push('A current project knowledge manifest requires observed_at.');
-    }
-  }
-
-  if (!['clean', 'dirty', 'unknown'].includes(manifest.observed_worktree)) {
-    errors.push('Project knowledge manifest observed_worktree must be clean, dirty, or unknown.');
-  }
-  if (manifest.observed_revision !== null &&
-      !/^[0-9a-f]{40}$/i.test(manifest.observed_revision || '')) {
-    errors.push('Project knowledge manifest observed_revision must be null or a full Git revision.');
-  }
-  if (manifest.observed_at !== null &&
-      (typeof manifest.observed_at !== 'string' || !manifest.observed_at.trim())) {
-    errors.push('Project knowledge manifest observed_at must be null or a non-empty timestamp.');
-  }
-
-  if (typeof manifest.module_inventory_basis !== 'string' ||
-      !manifest.module_inventory_basis.trim()) {
-    errors.push('Project knowledge manifest requires a module_inventory_basis.');
-  } else if (manifest.status === 'current' && /pending/i.test(manifest.module_inventory_basis)) {
-    errors.push('A current project knowledge manifest cannot use a pending module inventory basis.');
-  }
-
-  if (!Array.isArray(manifest.known_gaps) ||
-      manifest.known_gaps.some((gap) => typeof gap !== 'string' || !gap.trim())) {
-    errors.push('Project knowledge manifest known_gaps must be an array of non-empty strings.');
-  }
-
-  if (!Array.isArray(manifest.documents) ||
-      JSON.stringify(manifest.documents) !== JSON.stringify(REQUIRED_KNOWLEDGE_DOCUMENTS)) {
-    errors.push(
-      'Project knowledge manifest documents must match the fixed Accord knowledge document list and order.'
-    );
-  }
-  if (manifest.status === 'current') {
-    for (const [relativePath, contents] of knowledgeContents) {
-      verifyFixedKnowledgeShape(relativePath, contents, errors);
-    }
-  }
-
-  if (!Array.isArray(manifest.modules)) {
-    errors.push('Project knowledge manifest modules must be an array of module IDs.');
-    return trackedPaths;
-  }
-
-  const seenModules = new Set();
-  for (const moduleId of manifest.modules) {
-    if (typeof moduleId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(moduleId)) {
-      errors.push('Project knowledge module IDs must use lower-case kebab-case: ' + String(moduleId));
-      continue;
-    }
-    if (seenModules.has(moduleId)) {
-      errors.push('Duplicate project knowledge module ID: ' + moduleId);
-      continue;
-    }
-    seenModules.add(moduleId);
-    if (selected && !selected.includes(moduleId)) continue;
-
-    const relativePath = KNOWLEDGE_ROOT + '/modules/' + moduleId + '.md';
-    const absolutePath = path.join(projectRoot, relativePath);
-    if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
-      errors.push('Missing project knowledge module document: ' + relativePath);
-    } else {
-      const contents = fs.readFileSync(absolutePath, 'utf8');
-      knowledgeContents.set(relativePath, contents);
-      if (hasTemplateProvenancePlaceholder(contents)) templateProvenancePlaceholders.push(relativePath);
-      if (!contents.includes('## Provenance')) {
-        errors.push('Project knowledge module is missing a Provenance section: ' + relativePath);
-      }
-      const budget = config.knowledge_base?.size_budgets?.module;
-      if (Number.isInteger(budget) && contents.length > budget) {
-        warnings.push(
-          'Project knowledge module exceeds its soft size budget (' +
-          contents.length + ' > ' + budget + ' characters): ' + relativePath
-        );
-      }
-    }
-    trackedPaths.push(relativePath);
-  }
-
-  const engineering = validateEngineeringManifest(projectRoot, manifest, { modules: selected });
-  errors.push(...engineering.errors);
-  warnings.push(...engineering.warnings);
-  trackedPaths.push(...engineering.trackedPaths);
-  for (const detail of Array.isArray(manifest.engineering?.documents) ? manifest.engineering.documents : []) {
-    if (engineering.trackedPaths.includes(detail?.path)) {
-      const contents = fs.readFileSync(path.join(projectRoot, detail.path), 'utf8');
-      knowledgeContents.set(detail.path, contents);
-      if (hasTemplateProvenancePlaceholder(contents)) templateProvenancePlaceholders.push(detail.path);
-    }
-  }
-
-  if (templateProvenancePlaceholders.length) {
-    const locations = [...new Set(templateProvenancePlaceholders)].join(', ');
-    if (manifest.status === 'current') {
-      errors.push('Current project knowledge retains template Provenance placeholders: ' + locations);
-    } else {
-      warnings.push('Project knowledge retains template Provenance placeholders; discovery is incomplete: ' + locations);
-    }
-  }
-
-  if (manifest.status === 'current' || manifest.scopes?.some(entry => entry.status === 'current')) {
-    const revisionTree = runGit(projectRoot, [
-      'ls-tree', '-r', '--name-only', String(manifest.observed_revision)
-    ]);
-    const revisionFiles = new Set(
-      revisionTree.ok ? revisionTree.stdout.split(/\r?\n/).filter(Boolean) : []
-    );
-    for (const [relativePath, contents] of knowledgeContents) {
-      const module = relativePath.match(/^docs\/modules\/([a-z0-9-]+)(?:\.md|\/)/)?.[1];
-      const scoped = manifest.schema_version === '1.4' && manifest.scopes?.find(entry => entry.module === module);
-      if (scoped ? scoped.status !== 'current' : manifest.status !== 'current') continue;
-      if (hasTemplateProvenancePlaceholder(contents)) errors.push('Reviewed document retains template provenance: ' + relativePath);
-      const citations = knowledgeProvenancePaths(contents);
-      if (citations.length === 0) {
-        errors.push(
-          'Current project knowledge requires at least one structured Provenance path: ' +
-          relativePath
-        );
-        continue;
-      }
-      for (const citation of citations) {
-        const normalized = citation.replaceAll('\\', '/').replace(/^\.\//, '');
-        const derivedCitation = isManagedDocumentationPath(normalized, [...seenModules], manifest.engineering);
-        const summaryCitation = relativePath === 'docs/agent-context.md' &&
-          knowledgeContents.has(normalized) && normalized !== relativePath;
-        if (!isContainedProjectPath(projectRoot, normalized) || isControlPlaneEvidence(normalized) ||
-            (derivedCitation && !summaryCitation)) {
-          errors.push('Project knowledge has an invalid or control-plane Provenance path: ' + citation);
-          continue;
-        }
-        // The compact view may cite reviewed docs produced after the observed source commit.
-        const scopedExists = scoped && (scoped.observation?.kind === 'worktree'
-          ? fs.existsSync(path.join(projectRoot, normalized))
-          : runGit(projectRoot, ['cat-file', '-e', scoped.observation?.base_revision + ':' + normalized]).ok);
-        if (!summaryCitation && (scoped ? !scopedExists : revisionTree.ok && !revisionFiles.has(normalized))) {
-          errors.push(
-            'Project knowledge Provenance path does not exist at observed_revision: ' + citation
-          );
-        }
-      }
-    }
-  }
-
-  return trackedPaths;
-}
-
-function verifyKnowledgeObservation(projectRoot, head, status, errors, warnings) {
-  const manifest = loadKnowledgeManifest(projectRoot, errors);
-  if (!manifest || manifest.status !== 'current' || !head.ok) {
-    return;
-  }
-  const revisionExists = runGit(projectRoot, [
-    'cat-file', '-e', String(manifest.observed_revision) + '^{commit}'
-  ]);
-  if (!revisionExists.ok) {
-    errors.push('Project knowledge observed_revision does not resolve to a Git commit.');
-    return;
-  }
-  if (manifest.observed_revision !== head.stdout) {
-    const changed = runGit(projectRoot, [
-      'diff', '--name-only', '--diff-filter=ACDMRTUXB',
-      String(manifest.observed_revision) + '..' + head.stdout, '--'
-    ]);
-    const controlOnly = (relativePath) =>
-      relativePath === 'AGENTS.md' ||
-      relativePath === '.github/copilot-instructions.md' ||
-      relativePath.startsWith('.accord/') ||
-      relativePath.startsWith('.agents/') ||
-      isManagedDocumentationPath(relativePath, Array.isArray(manifest.modules) ? manifest.modules : [], manifest.engineering);
-    const sourceChanges = changed.ok
-      ? changed.stdout.split(/\r?\n/).filter(Boolean).filter((file) => !controlOnly(file))
-      : [];
-    if (!changed.ok) {
-      warnings.push('Could not compare project knowledge observed_revision with HEAD.');
-    } else if (sourceChanges.length > 0) {
-      warnings.push(
-        'Project knowledge may be stale: ' + sourceChanges.length +
-        ' source or project-document paths changed after observed_revision.'
-      );
-    }
-  }
-  if (status.ok && status.stdout) {
-    warnings.push(
-      'Project knowledge is revision-bound to clean committed files; current uncommitted changes are outside that view.'
-    );
-  }
-}
-
-function parseChangeFrontMatter(text) {
-  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) {
-    return {};
-  }
-
-  const values = {};
-  for (const line of match[1].split(/\r?\n/)) {
-    const pair = line.match(/^([a-z_]+):\s*(.+?)\s*$/i);
-    if (pair) {
-      values[pair[1]] = pair[2].replace(/^['"]|['"]$/g, '');
-    }
-  }
-  return values;
-}
-
-function revisionInVersionRow(text, label) {
-  const line = text
-    .split(/\r?\n/)
-    .find((candidate) => candidate.toLowerCase().includes(label.toLowerCase()));
-
-  if (!line) {
-    return null;
-  }
-
-  return line.match(/\b[0-9a-f]{40}\b/i)?.[0] || null;
-}
-
-function verifyCapabilityLedger(text, file, errors) {
-  const section = markdownSection(text, '### Capability Use');
-  if (!section || containsPendingMarker(section)) {
-    errors.push('Post-design material Change requires a resolved Capability Use ledger: ' + file);
-    return;
-  }
-  const ledgerRows = section.split(/\r?\n/).filter(line => /^\s*\|/.test(line));
-  const explicitlyUnused = ledgerRows.some(row =>
-    /^\s*\|\s*(?:none|no optional capability|未使用|不适用)\s*\|/i.test(row) ||
-    /^\s*\|[^|]*\|\s*(?:not applicable|no optional capability|未使用|不适用)\s*\|/i.test(row)
-  );
-  const lifecycleStates = ['selected', 'loaded', 'applied', 'verified'];
-  const hasLifecycle = lifecycleStates.every(state => new RegExp('\\b' + state + '\\b', 'i').test(section));
-  if (!explicitlyUnused && !hasLifecycle) {
-    errors.push('Capability Use ledger must distinguish selected, loaded, applied, and verified, or record an explicit no-use basis: ' + file);
-  }
-  if (hasLifecycle && /\bloaded\b[\s\S]{0,160}\bapplied\b/i.test(section) &&
-      !/\b(?:output|evidence|revision|skip|failure|结果|证据|版本|跳过|失败)\b/i.test(section)) {
-    errors.push('Capability Use ledger needs output/evidence or a skip/failure basis: ' + file);
-  }
-}
-
-function requireCommitRevision(projectRoot, text, label, context, errors) {
-  const revision = revisionInVersionRow(text, label);
-  if (!revision) {
-    errors.push(context + ' is missing a full Git ' + label.toLowerCase() + '.');
-    return null;
-  }
-  if (!runGit(projectRoot, ['cat-file', '-e', revision + '^{commit}']).ok) {
-    errors.push(context + ' ' + label.toLowerCase() + ' does not resolve to a Git commit.');
-  }
-  return revision;
-}
-
-function containsPendingMarker(text) {
-  return /\b(?:replace[- ]with|CHG-XXXX|YYYY-MM-DD|REQ-XXX|UN-XXX)\b/i.test(text) ||
-    /(?:^|\|)\s*Pending(?:[^|\r\n]*)?(?=\||$)/im.test(text) ||
-    /Design Input Ready:\s*\*\*No\b/i.test(text);
-}
-
-function markdownSection(text, heading) {
-  const start = text.indexOf(heading);
-  if (start < 0) return '';
-  const remainder = text.slice(start + heading.length);
-  const next = remainder.search(/^##\s+/m);
-  return next < 0 ? remainder : remainder.slice(0, next);
-}
-
-function validAcceptedAt(value) {
-  if (typeof value !== 'string' ||
-      !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)?$/.test(value)) {
-    return false;
-  }
-  const parsed = new Date(value.length === 10 ? value + 'T00:00:00Z' : value);
-  return !Number.isNaN(parsed.getTime()) &&
-    parsed.toISOString().slice(0, 10) === value.slice(0, 10);
-}
-
-function verifyCurrentChange(projectRoot, change, text, file, errors) {
-  const headings = ['## Intent and Scope', '## Need and Design Input', '## Context and Impact',
-    '## Decisions and Authority', '## Git and Recovery', '## Verification and Validation', '## Acceptance'];
-  for (const heading of headings) if (!text.includes(heading)) errors.push('Change is missing ' + heading + ': ' + file);
-  if (!['pending', 'ready', 'approved'].includes(change.design_input_status) ||
-      !['pending', 'approved'].includes(change.implementation_authority) ||
-      !['not-required', 'pending', 'approved'].includes(change.execution_authority)) errors.push('Invalid Change readiness/authority state: ' + file);
-  if (!POST_DESIGN_STATUSES.has(change.status)) return;
-  if (!['ready', 'approved'].includes(change.design_input_status)) errors.push('Ready Change requires sufficiently specified inputs: ' + file);
-  if (AUTHORIZED_STAGES.has(change.status)) {
-    if (change.design_input_status !== 'approved' || change.implementation_authority !== 'approved' ||
-        !change.authority_basis || containsPendingMarker(change.authority_basis)) errors.push('Authorized Change requires approved inputs and inspectable scoped human authority_basis: ' + file);
-    requireCommitRevision(projectRoot, text, 'Base revision', file, errors);
-  }
-  if (EXECUTING_STAGES.has(change.status) && change.risk === 'L4' && change.execution_authority !== 'approved') errors.push('Executing L4 Change requires explicit execution authority: ' + file);
-  if (change.risk !== 'L4' && change.execution_authority !== 'not-required') errors.push('L2/L3 execution_authority must be not-required: ' + file);
-  if (AUTHORIZED_STAGES.has(change.status) && ['L3', 'L4'].includes(change.risk)) requireCommitRevision(projectRoot, text, 'Checkpoint', file, errors);
-  const ledger = markdownSection(text, '### Capability Use').match(/```json\s*\n([\s\S]*?)\n```/);
-  if (!ledger) errors.push('Change requires one JSON method-use array (empty with a no-use basis): ' + file);
-  else {
-    try {
-      const entries = parseExactJson(ledger[1]);
-      errors.push(...validateMethodUse(entries, change.status).map(error => error + ': ' + file));
-      if (Array.isArray(entries) && !entries.length && !change.method_use_basis) errors.push('Empty method use requires method_use_basis: ' + file);
-    } catch (error) { errors.push('Invalid method-use JSON: ' + file + ': ' + error.message); }
-  }
-  if (DELIVERY_STAGES.has(change.status)) {
-    for (const heading of headings.slice(0, -1).filter(h => h !== '## Git and Recovery')) {
-      if (containsPendingMarker(markdownSection(text, heading))) errors.push('Delivery retains unresolved engineering markers in ' + heading + ': ' + file);
-    }
-    if (!change.evidence_basis || containsPendingMarker(change.evidence_basis)) errors.push('Delivery requires revision/worktree-bound evidence_basis: ' + file);
-  }
-  if (['accepted', 'awaiting-archive'].includes(change.status) && (!change.acceptance_basis || containsPendingMarker(change.acceptance_basis))) errors.push('Human acceptance requires acceptance_basis: ' + file);
-  if (change.status === 'accepted') requireCommitRevision(projectRoot, text, 'Result revision', file, errors);
-  if (change.status === 'awaiting-archive' && (!change.archive_basis || containsPendingMarker(change.archive_basis))) errors.push('Deferred archive requires archive_basis, not a fabricated result revision: ' + file);
-}
-
-function verifyActiveChanges(projectRoot, errors, warnings, selected = null) {
-  const changesRoot = path.join(projectRoot, '.accord', 'changes');
-  if (!fs.existsSync(changesRoot)) {
-    errors.push('Missing active Change directory: ' + changesRoot);
-    return;
-  }
-
-  const files = fs.readdirSync(changesRoot)
-    .filter((file) => file.endsWith('.md') && (!selected || file === selected + '.md'))
-    .sort();
-  if (selected && !files.length) errors.push('Selected Change does not exist: ' + selected);
-
-  for (const file of files) {
-    const filePath = path.join(changesRoot, file);
-    const text = fs.readFileSync(filePath, 'utf8');
-    const change = parseChangeFrontMatter(text);
-
-    if (!change.id || !change.status || !change.risk || !change.accord_version) {
-      errors.push('Active Change has incomplete front matter: ' + file);
-      continue;
-    }
-
-    if (!/^CHG-[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(change.id)) {
-      errors.push('Active Change ID must use upper-case CHG-* naming: ' + file);
-    } else if (file !== change.id + '.md') {
-      errors.push('Active Change filename must match its ID: ' + file);
-    }
-
-    if (!RISK_LEVELS.has(change.risk)) {
-      errors.push('Active Change risk must be L0, L1, L2, L3, or L4: ' + file);
-    }
-    if (!CHANGE_STATUSES.has(change.status)) {
-      errors.push('Active Change has an invalid status: ' + file);
-    }
-    if (change.accord_version === '0.8' && change.status === 'awaiting-archive') errors.push('awaiting-archive requires a reviewed Change 0.9 migration: ' + file);
-    if (!RECORD_SCHEMAS.has(change.accord_version)) {
-      errors.push(
-        'Active Change requires reviewed migration to accord_version ' +
-        CHANGE_SCHEMA + ': ' + file
-      );
-    }
-    if (change.owner !== 'human-user') {
-      errors.push('Active Change owner must be human-user: ' + file);
-    }
-    if (!RISK_LEVELS.has(change.risk) || !CHANGE_STATUSES.has(change.status) ||
-        !RECORD_SCHEMAS.has(change.accord_version)) {
-      continue;
-    }
-
-    if (!MATERIAL_RISKS.has(change.risk)) {
-      continue;
-    }
-
-    if (change.accord_version === CHANGE_SCHEMA) {
-      verifyCurrentChange(projectRoot, change, text, file, errors);
-      continue;
-    }
-
-    const requiredHeadings = [
-      '## Intent and Scope',
-      '## Need and Design Input',
-      '### Discovery and Delta',
-      '### Scenarios and Acceptance',
-      '## Context and Impact',
-      '### Change Context and Impact Map',
-      '### Project Knowledge Impact',
-      '### Capability Use',
-      '## Decisions and Authority',
-      '## Traceability',
-      '## Git and Recovery',
-      '## Verification and Validation',
-      '## Acceptance'
-    ];
-    for (const heading of requiredHeadings) {
-      if (!text.includes(heading)) {
-        errors.push('Material Change is missing ' + heading + ': ' + file);
-      }
-    }
-
-    if (!POST_DESIGN_STATUSES.has(change.status)) {
-      continue;
-    }
-
-    if (!['pending', 'approved'].includes(change.design_input_status)) {
-      errors.push('Material Change design_input_status must be pending or approved: ' + file);
-    }
-    if (!['pending', 'approved'].includes(change.implementation_authority)) {
-      errors.push('Material Change implementation_authority must be pending or approved: ' + file);
-    }
-    if (!['not-required', 'pending', 'approved'].includes(change.execution_authority)) {
-      errors.push('Material Change execution_authority is invalid: ' + file);
-    }
-
-    if (POST_DESIGN_STATUSES.has(change.status) && change.design_input_status !== 'approved') {
-      errors.push('Post-design material Change requires approved design_input_status: ' + file);
-    }
-    if (['approved', 'implementing', 'verifying', 'validating', 'review', 'accepted'].includes(change.status) &&
-        change.implementation_authority !== 'approved') {
-      errors.push('Approved or executing material Change requires implementation_authority approved: ' + file);
-    }
-    if (change.risk === 'L4' &&
-        ['implementing', 'verifying', 'validating', 'review', 'accepted'].includes(change.status) &&
-        change.execution_authority !== 'approved') {
-      errors.push('Executing L4 Change requires explicit execution_authority approved: ' + file);
-    }
-    if (change.risk !== 'L4' && change.execution_authority !== 'not-required') {
-      errors.push('L2/L3 Change execution_authority must be not-required: ' + file);
-    }
-
-    if (POST_DESIGN_STATUSES.has(change.status)) {
-      requireCommitRevision(projectRoot, text, 'Base revision', 'Material Change ' + file, errors);
-
-      const intentSection = markdownSection(text, '## Intent and Scope');
-      for (const label of [
-        'Direct user request',
-        'Current state',
-        'Target state',
-        'Recommended interpretation'
-      ]) {
-        if (!new RegExp('\\|\\s*' + label + '\\s*\\|', 'i').test(intentSection)) {
-          errors.push('Post-design material Change is missing intent alignment field "' +
-            label + '": ' + file);
-        }
-      }
-
-      const designInputSection = markdownSection(text, '## Need and Design Input');
-      if (!/\b(?:preserve|extend|modify|supersede|unresolved|not[ -]applicable)\b/i
-        .test(designInputSection)) {
-        errors.push('Post-design material Change must classify affected baseline relations: ' + file);
-      }
-      verifyCapabilityLedger(text, file, errors);
-    }
-
-    if (['L3', 'L4'].includes(change.risk) &&
-        ['approved', 'implementing', 'verifying', 'validating', 'review', 'accepted'].includes(change.status) &&
-        !revisionInVersionRow(text, 'Checkpoint')) {
-      errors.push('L3/L4 Change is missing a full Git checkpoint revision: ' + file);
-    } else if (['L3', 'L4'].includes(change.risk) &&
-        ['approved', 'implementing', 'verifying', 'validating', 'review', 'accepted'].includes(change.status)) {
-      requireCommitRevision(projectRoot, text, 'Checkpoint', 'L3/L4 Change ' + file, errors);
-    }
-
-    const reviewReadySections = [
-      '## Intent and Scope',
-      '## Need and Design Input',
-      '## Context and Impact',
-      '## Decisions and Authority',
-      '## Traceability',
-      '## Verification and Validation',
-      '## Limitations and Residual Risk'
-    ].map((heading) => markdownSection(text, heading)).join('\n');
-    if (change.status === 'review' && containsPendingMarker(reviewReadySections)) {
-      errors.push('Review Change still contains unresolved engineering or V&V markers: ' + file);
-    }
-    if (change.status === 'accepted' && containsPendingMarker(text)) {
-      errors.push('Accepted Change still contains unresolved template markers: ' + file);
-    }
-    if (change.status === 'accepted') {
-      requireCommitRevision(projectRoot, text, 'Result revision', 'Accepted Change ' + file, errors);
-      if (/^- \[ \]/m.test(text)) {
-        errors.push('Accepted Change has unchecked acceptance items: ' + file);
-      }
-    }
-  }
-}
-
-function verifyRecords(projectRoot, errors, selected = null) {
-  const recordsRoot = path.join(projectRoot, '.accord', 'records');
-  if (!fs.existsSync(recordsRoot)) {
-    return;
-  }
-
-  const files = fs.readdirSync(recordsRoot)
-    .filter((file) => file.endsWith('.yaml') && (!selected || file === selected + '.yaml'))
-    .sort();
-
-  for (const file of files) {
-    const text = fs.readFileSync(path.join(recordsRoot, file), 'utf8');
-    let record;
-    try {
-      record = parseExactJson(text);
-    } catch (error) {
-      errors.push('Accord 0.8 Record must be JSON-compatible YAML: ' + file + ': ' + error.message);
-      continue;
-    }
-    const id = record?.id;
-    if (!RECORD_SCHEMAS.has(record?.schema_version)) {
-      errors.push('Unsupported Record schema; historical 0.8 and current 0.9 are readable: ' + file);
-    }
-    if (!id || !/^CHG-[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(id)) {
-      errors.push('Accord Record ID must use upper-case CHG-* naming: ' + file);
-    } else if (file !== id + '.yaml') {
-      errors.push('Accord Record filename must match its ID: ' + file);
-    }
-    if (typeof record?.title !== 'string' || !record.title.trim() || containsPendingMarker(record.title)) {
-      errors.push('Accord Record requires a final non-placeholder title: ' + file);
-    }
-    if (!RISK_LEVELS.has(record?.risk)) {
-      errors.push('Accord Record risk must be L0, L1, L2, L3, or L4: ' + file);
-    }
-    if (record?.result !== 'accepted') {
-      errors.push('Accord Record result must be accepted: ' + file);
-    }
-    if (!validAcceptedAt(record?.accepted_at)) {
-      errors.push('Accord Record accepted_at must be an ISO date or UTC timestamp: ' + file);
-    }
-
-    const versionControl = record?.version_control;
-    if (!versionControl || versionControl.system !== 'git') {
-      errors.push('Accord Record version_control.system must be git: ' + file);
-    } else {
-      for (const key of ['base_revision', 'result_revision']) {
-        const revision = versionControl[key];
-        if (!/^[0-9a-f]{40}$/i.test(revision || '')) {
-          errors.push('Accord Record requires a full ' + key + ': ' + file);
-        } else if (!runGit(projectRoot, ['cat-file', '-e', revision + '^{commit}']).ok) {
-          errors.push('Accord Record ' + key + ' does not resolve to a Git commit: ' + file);
-        }
-      }
-      if (['L3', 'L4'].includes(record.risk)) {
-        if (!/^[0-9a-f]{40}$/i.test(versionControl.checkpoint_revision || '')) {
-          errors.push('L3/L4 Accord Record requires a full checkpoint_revision: ' + file);
-        } else if (!runGit(projectRoot, [
-          'cat-file', '-e', versionControl.checkpoint_revision + '^{commit}'
-        ]).ok) {
-          errors.push('Accord Record checkpoint_revision does not resolve to a Git commit: ' + file);
-        }
-      } else if (versionControl.checkpoint_revision !== null &&
-          !/^[0-9a-f]{40}$/i.test(versionControl.checkpoint_revision || '')) {
-        errors.push('Accord Record checkpoint_revision must be null or a full Git revision: ' + file);
-      }
-      if (!['clean', 'dirty-with-disclosed-limitations'].includes(versionControl.worktree)) {
-        errors.push('Accord Record version_control.worktree is invalid: ' + file);
-      }
-      if (!['local-only', 'remote-not-pushed', 'remote-pushed'].includes(versionControl.remote_status)) {
-        errors.push('Accord Record version_control.remote_status is invalid: ' + file);
-      }
-    }
-
-    const requireArray = (container, key, { nonEmpty = false } = {}) => {
-      const value = container?.[key];
-      if (!Array.isArray(value) ||
-          value.some((entry) => typeof entry !== 'string' || !entry.trim() || containsPendingMarker(entry)) ||
-          (nonEmpty && value.length === 0)) {
-        errors.push('Accord Record ' + key + ' must be ' +
-          (nonEmpty ? 'a non-empty array' : 'an array') + ' of non-empty references: ' + file);
-      }
-      return Array.isArray(value) ? value : [];
-    };
-    if (record.schema_version === '0.9') {
-      for (const key of ['input_refs', 'decision_refs', 'verification_refs', 'validation_refs', 'review_refs']) {
-        for (const reference of requireArray(record, key, { nonEmpty: true })) {
-          if (typeof reference !== 'string') continue;
-          try {
-            const historical = reference.match(/^git:([a-f0-9]{40}):([^#]+)(?:#.*)?$/);
-            if (historical) {
-              const [, revision, relativePath] = historical;
-              if (!isContainedProjectPath(projectRoot, relativePath) || !runGit(projectRoot, ['cat-file', '-e', revision + ':' + relativePath]).ok) throw new Error('Historical evidence path does not resolve.');
-            } else safeContractPath(projectRoot, reference.split('#')[0]);
-          } catch (error) { errors.push('Record evidence reference ' + reference + ': ' + error.message); }
-        }
-      }
-      requireArray(record, 'updated_owners');
-      if (typeof record.disposition !== 'string' || !record.disposition.trim() || containsPendingMarker(record.disposition)) {
-        errors.push('Record requires a disposition covering document changes/no-update, methods, limitations and residual risk: ' + file);
-      }
-      continue;
-    }
-    for (const [key, basisKey] of [
-      ['canonical_updates', 'canonical_update_basis'],
-      ['project_knowledge_updates', 'project_knowledge_update_basis'],
-      ['capabilities_used', 'capabilities_use_basis']
-    ]) {
-      const values = requireArray(record, key);
-      if (values.length === 0 &&
-          (typeof record?.[basisKey] !== 'string' || !record[basisKey].trim())) {
-        errors.push('Accord Record requires ' + basisKey + ' when ' + key + ' is empty: ' + file);
-      }
-    }
-    requireArray(record?.engineering_inputs, 'user_needs', { nonEmpty: true });
-    requireArray(record?.engineering_inputs, 'requirements', { nonEmpty: true });
-    requireArray(record?.engineering_inputs, 'interfaces_data_risks_operations');
-    requireArray(record?.traceability, 'verified', { nonEmpty: true });
-    requireArray(record?.traceability, 'validated', { nonEmpty: true });
-    requireArray(record?.traceability, 'known_gaps');
-    requireArray(record?.evidence, 'verification', { nonEmpty: true });
-    requireArray(record?.evidence, 'validation', { nonEmpty: true });
-    requireArray(record?.evidence, 'review', { nonEmpty: true });
-    for (const [key, basisKey] of [
-      ['limitations', 'limitations_basis'],
-      ['residual_risk', 'residual_risk_basis']
-    ]) {
-      const values = requireArray(record?.evidence, key);
-      if (values.length === 0 &&
-          (typeof record?.evidence?.[basisKey] !== 'string' || !record.evidence[basisKey].trim())) {
-        errors.push('Accord Record evidence requires ' + basisKey + ' when ' + key + ' is empty: ' + file);
-      }
-    }
-  }
+  try {
+    const model = loadProjectModel(projectRoot, config);
+    const result = validateProjectKnowledge(model, { modules: requestedModules });
+    errors.push(...result.errors);
+    const gaps = result.gaps.map(g => 'Knowledge gap: ' + JSON.stringify(g));
+    if (model.manifest.status === 'current') errors.push(...gaps); else warnings.push(...gaps);
+    return [...new Set([...model.metadata_paths, ...result.inspected])];
+  } catch (e) { errors.push(e.message); return []; }
 }
 
 function verifyTrackedAdoption(
@@ -1423,7 +678,8 @@ function verifyTrackedAdoption(
     '.agents/skills/accord/references/project-improvement.md',
     '.agents/skills/accord/references/needs-and-design-input.md',
     '.agents/skills/accord/references/risk-and-authority.md',
-    '.agents/skills/accord/references/change-lifecycle.md',
+    '.agents/skills/accord/references/team-work.md',
+    '.agents/skills/accord/references/project-knowledge.md',
     '.agents/skills/accord/references/knowledge-acquisition.md',
     '.agents/skills/accord/references/knowledge-query-and-refresh.md',
     '.agents/skills/accord/references/capability-lifecycle.md',
@@ -1433,12 +689,16 @@ function verifyTrackedAdoption(
     '.agents/skills/accord/scripts/accord-route.mjs',
     '.agents/skills/accord/scripts/accord-methods.mjs',
     '.agents/skills/accord/scripts/accord-validate.mjs',
-    '.agents/skills/accord/scripts/accord-engineering.mjs',
+    '.agents/skills/accord/scripts/accord-project.mjs',
+    '.agents/skills/accord/scripts/accord-work.mjs',
+    '.agents/skills/accord/scripts/accord-governance.mjs',
     '.agents/skills/accord/scripts/accord-contracts.mjs',
     '.agents/skills/accord/scripts/accord-adoption.mjs',
     '.agents/skills/accord/scripts/accord-protocol.mjs',
     '.agents/skills/accord/scripts/accord-scope.mjs',
-    '.accord/accord.yaml'
+    '.accord/accord.yaml',
+    '.accord/documentation-policy.yaml',
+    '.accord/governance.yaml'
   ];
   if (codingPracticesPath) {
     requiredFiles.push(codingPracticesPath);
@@ -1461,11 +721,6 @@ function verifyTrackedAdoption(
     }
   }
 
-  for (const relativeDirectory of ['.accord/changes', '.accord/records']) {
-    if (![...trackedFiles].some((file) => file.startsWith(relativeDirectory + '/'))) {
-      errors.push('Accord state directory has no tracked retention file: ' + relativeDirectory);
-    }
-  }
 }
 
 function parseArguments(argv) {
@@ -1478,7 +733,7 @@ function parseArguments(argv) {
     if (argument === '--project') {
       project = argv[index + 1];
       index += 1;
-    } else if (['--scope', '--change', '--modules', '--routes'].includes(argument)) {
+    } else if (['--scope', '--work', '--modules', '--routes'].includes(argument)) {
       const value = argv[++index];
       if (!value || value.startsWith('--')) return { error: argument + ' requires a value.' };
       options[argument.slice(2)] = ['--modules', '--routes'].includes(argument) ? value.split(',') : value;
@@ -1499,7 +754,7 @@ function parseArguments(argv) {
 }
 
 function printUsage() {
-  console.log('Usage: node accord-validate.mjs --project <path> [--scope installation|task|delivery|audit] [--change CHG-ID] [--modules id,id] [--routes id,id] [--require-clean]');
+  console.log('Usage: node accord-validate.mjs --project <path> [--scope installation|task|delivery|audit] [--work relative.json] [--modules id,id] [--routes id,id] [--require-clean]');
 }
 
 export function validateProject(projectInput, options = {}) {
@@ -1515,24 +770,32 @@ function validateProjectUnchecked(projectInput, options = {}) {
   const errors = [];
   const warnings = [];
   const projectRoot = path.resolve(projectInput);
-  const scope = options.scope || 'audit';
+  const scope = options.scope || ((options.work || options.modules?.length) ? 'task' : 'audit');
   const checked = ['protocol', 'installation-integrity', 'Git-state'];
   const notChecked = [];
-  if (!VALIDATION_SCOPES.has(scope) || (options.change && !/^CHG-[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(options.change)) ||
-      (['task', 'delivery'].includes(scope) && !options.change && !options.modules?.length) ||
-      (['audit', 'installation'].includes(scope) && (options.change || options.modules || options.routes))) {
-    return { projectRoot, errors: ['Invalid scope/Change ID; task or delivery requires --change or --modules.'], warnings, checked: [], notChecked: ['all'] };
+  if (!VALIDATION_SCOPES.has(scope) || options.change ||
+      (['task', 'delivery'].includes(scope) && !options.work && !options.modules?.length) ||
+      (['audit', 'installation'].includes(scope) && (options.work || options.modules || options.routes))) {
+    return { projectRoot, errors: ['Invalid scope/carrier; use --work or --modules. Retired Change files must be migrated.'], warnings, checked: [], notChecked: ['all'] };
   }
 
   if (!fs.existsSync(projectRoot) || !fs.statSync(projectRoot).isDirectory()) {
     return { errors: ['Project directory does not exist: ' + projectRoot], warnings, projectRoot };
   }
 
+  for (const retired of ['.accord/changes', '.accord/records',
+    '.agents/skills/accord/scripts/accord-engineering.mjs',
+    '.agents/skills/accord/references/engineering-documents.md',
+    '.agents/skills/accord/references/change-lifecycle.md',
+    '.agents/skills/accord/assets/templates/change.md',
+    '.agents/skills/accord/assets/templates/record.yaml']) {
+    if (fs.existsSync(path.join(projectRoot, retired))) errors.push('Retired owner remains; migrate needed facts and remove it: ' + retired);
+  }
+
   for (const relativePath of [
     'AGENTS.md',
     '.github/copilot-instructions.md',
-    '.agents/skills/accord/SKILL.md',
-    '.accord/records'
+    '.agents/skills/accord/SKILL.md'
   ]) {
     const absolutePath = path.join(projectRoot, relativePath);
     if (!fs.existsSync(absolutePath)) {
@@ -1562,21 +825,27 @@ function validateProjectUnchecked(projectInput, options = {}) {
 
   const config = loadConfiguration(projectRoot, errors);
   verifyConfiguration(config, errors);
+  if (!options.scope) warnings.push('Inferred validation scope: ' + scope + '. Pass --scope explicitly; unscoped calls perform audit.');
+  if (config?.schema_version === '0.9') {
+    try { errors.push(...validateGovernancePolicy(readJson(projectRoot, POLICY_PATH))); checked.push('governance-policy-shape'); }
+    catch (e) { errors.push(e.message); }
+    notChecked.push('human-authority-and-remote-review-authentication');
+  }
+  let workModules = [];
+  if (options.work) {
+    try {
+      const work = readJson(projectRoot, options.work);
+      const result = validateWorkItem(projectRoot, work, { delivery: scope === 'delivery' });
+      if (Array.isArray(work.modules)) workModules = work.modules;
+      errors.push(...result.errors); warnings.push(...result.warnings); checked.push('work:' + options.work);
+    } catch (e) { errors.push(e.message); }
+  }
   const installation = inspectInstallation(projectRoot, config);
   errors.push(...installation.errors);
   warnings.push(...installation.warnings);
   const codingPracticesPath = verifyCodingPractices(projectRoot, config, agents, copilot, errors);
-  let moduleSelection = options.modules;
-  if (moduleSelection?.length) {
-    try { moduleSelection = selectModuleScope(loadKnowledgeManifest(projectRoot, errors), moduleSelection); }
-    catch (error) { errors.push(error.message); return { errors, warnings, projectRoot, scope, checked, notChecked: ['selected-knowledge-incomplete'] }; }
-  }
-  const inspectKnowledge = scope === 'audit' || (scope !== 'installation' && options.modules?.length > 0);
-  const sourceOwners = inspectKnowledge && moduleSelection?.length
-    ? config?.sources?.engineering?.filter(source => !source.modules?.length || source.modules.some(id => moduleSelection.includes(id)))
-    : scope === 'audit' ? config?.sources?.engineering : [];
-  const engineeringSources = validateEngineeringSources(projectRoot, sourceOwners);
-  errors.push(...engineeringSources.errors);
+  const moduleSelection = [...new Set([...(options.modules || []), ...workModules])];
+  const inspectKnowledge = scope === 'audit' || (scope !== 'installation' && moduleSelection.length > 0);
   const knowledgePaths = inspectKnowledge ? verifyKnowledgeBase(
     projectRoot,
     config,
@@ -1586,7 +855,7 @@ function validateProjectUnchecked(projectInput, options = {}) {
     warnings,
     moduleSelection
   ) : [];
-  if (inspectKnowledge) checked.push(options.modules?.length ? 'knowledge:' + options.modules.join(',') + '+dependencies' : 'all-knowledge');
+  if (inspectKnowledge) checked.push(moduleSelection.length ? 'knowledge:' + moduleSelection.join(',') + '+dependencies' : 'all-knowledge');
   else notChecked.push('knowledge-content-and-coverage');
   const capabilityPaths = ['audit', 'installation'].includes(scope) ? verifyCapabilities(
     projectRoot,
@@ -1606,7 +875,6 @@ function validateProjectUnchecked(projectInput, options = {}) {
       catch (error) { errors.push('Route ' + route + ': ' + error.message); }
     }
   }
-  knowledgePaths.push(...engineeringSources.paths);
   knowledgePaths.push(...installation.paths);
 
   const gitVersion = runGit(projectRoot, ['--version']);
@@ -1655,12 +923,11 @@ function validateProjectUnchecked(projectInput, options = {}) {
 
   const status = runGit(projectRoot, ['status', '--porcelain']);
   if (status.ok && status.stdout) {
-    warnings.push('Working tree has changes. Confirm they belong to the active Change before staging.');
+    warnings.push('Working tree has changes. Confirm they belong to the selected work before staging.');
     if (options.requireClean) {
       errors.push('Working tree is not clean.');
     }
   }
-  if (inspectKnowledge && !options.modules?.length) verifyKnowledgeObservation(projectRoot, head, status, errors, warnings);
 
   if (config?.repository?.remote?.mode === 'required') {
     const remotes = runGit(projectRoot, ['remote']);
@@ -1669,13 +936,14 @@ function validateProjectUnchecked(projectInput, options = {}) {
     }
   }
 
-  if (scope === 'audit' || options.change) {
-    verifyActiveChanges(projectRoot, errors, warnings, scope === 'audit' ? null : options.change);
-    checked.push(scope === 'audit' ? 'all-active-changes' : 'change:' + options.change);
-  } else notChecked.push('active-changes');
-  if (scope === 'audit' || (scope === 'delivery' && options.change)) {
-    verifyRecords(projectRoot, errors, scope === 'audit' ? null : options.change);
-    checked.push(scope === 'audit' ? 'all-records' : 'matching-record-if-present');
+  if (scope === 'audit') {
+    const index = indexLocalWork(projectRoot, { history: true });
+    errors.push(...index.gaps.map(g => g.path + ': ' + g.reason));
+    for (const item of index.entries) {
+      const result = validateWorkItem(projectRoot, readJson(projectRoot, item.path));
+      errors.push(...result.errors); warnings.push(...result.warnings);
+    }
+    checked.push('all-local-work');
   }
   if (scope !== 'audit') notChecked.push('unrelated-history', 'unselected-project-scope');
 

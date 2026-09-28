@@ -94,24 +94,24 @@ function packageFiles(root, directory, output = [], budget = { entries: 0 }, dep
   return output;
 }
 
-export function installationTarget(sourcePath) {
+export function installationTarget(sourcePath, { migrationSource = false } = {}) {
   relativePath(sourcePath);
   if (!sourcePath.startsWith('payload/')) throw new Error('Only payload files can become installation targets.');
   const relative = sourcePath.slice(8);
+  if (migrationSource && ['.accord/changes/.gitkeep', '.accord/records/.gitkeep'].includes(relative)) return { path: relative, policy: 'project-owned' };
   if (relative === 'AGENTS.accord-block.md') return { path: 'AGENTS.md', policy: 'managed-block', block: 'accord' };
   if (relative === 'copilot-instructions.accord.md') return { path: '.github/copilot-instructions.md', policy: 'managed-block', block: 'accord:copilot' };
   if (relative.startsWith('.agents/skills/accord/')) return { path: relative, policy: 'runtime' };
-  if (relative === '.accord/accord.yaml' || relative === '.accord/capabilities/routes.yaml') return { path: relative, policy: 'merge-json' };
+  if (['.accord/accord.yaml', '.accord/capabilities/routes.yaml', '.accord/documentation-policy.yaml', '.accord/governance.yaml'].includes(relative)) return { path: relative, policy: 'merge-json' };
   if (relative === '.accord/release.json') return { path: relative, policy: 'runtime' };
-  if (relative === '.accord/capabilities/registry.yaml' || relative.startsWith('docs/') ||
-      ['.accord/changes/.gitkeep', '.accord/records/.gitkeep'].includes(relative)) return { path: relative, policy: 'project-owned' };
+  if (relative === '.accord/capabilities/registry.yaml' || relative.startsWith('docs/')) return { path: relative, policy: 'project-owned' };
   if (relative.startsWith('.accord/capabilities/methods/')) throw new Error('Project-specific methods must not ship in the default payload.');
   if (relative.startsWith('.accord/capabilities/')) return { path: relative, policy: 'runtime' };
   if (relative === 'ACCORD-LICENSE') return { path: relative, policy: 'runtime' };
   throw new Error('Unregistered payload destination: ' + relative);
 }
 
-export function verifyReleasePackage(rootInput, { allowLegacy = false } = {}) {
+export function verifyReleasePackage(rootInput, { migrationSource = false } = {}) {
   const root = fs.realpathSync(rootInput);
   const manifest = bytes(root, 'SHA256SUMS');
   const entries = [];
@@ -128,7 +128,7 @@ export function verifyReleasePackage(rootInput, { allowLegacy = false } = {}) {
     total += content.length;
     if (total > LIMITS.totalBytes) throw new Error('Package byte budget exceeded.');
     if (digest(content) !== sha256) throw new Error('Package checksum mismatch: ' + relative);
-    if (relative.startsWith('payload/')) installationTarget(relative);
+    if (relative.startsWith('payload/')) installationTarget(relative, { migrationSource });
     entries.push({ source_path: relative, sha256 });
   }
   const metadata = bytes(root, 'RELEASE.json', true);
@@ -136,7 +136,7 @@ export function verifyReleasePackage(rootInput, { allowLegacy = false } = {}) {
   if (actual.length !== entries.length || actual.some(file => !seen.has(file.toLowerCase()))) throw new Error('Package has missing or unlisted files.');
   const config = parse(bytes(root, 'payload/.accord/accord.yaml').toString('utf8'));
   const payloadMetadata = bytes(root, 'payload/.accord/release.json', true);
-  const legacy = allowLegacy && !metadata && !payloadMetadata && config.accord?.release === undefined;
+  const legacy = migrationSource && !metadata && !payloadMetadata && config.accord?.release === undefined;
   const release = metadata ? parse(metadata.toString('utf8')) : null;
   if (!legacy && (!object(release) || !payloadMetadata || !sameFile(metadata, payloadMetadata, 'RELEASE.json') ||
       release.schema_version !== '1.0' || release.id !== 'agentic-coding-accord' ||
@@ -150,12 +150,16 @@ export function verifyReleasePackage(rootInput, { allowLegacy = false } = {}) {
   const knowledge = parse(bytes(root, 'payload/docs/manifest.yaml').toString('utf8'));
   const registry = parse(bytes(root, 'payload/.accord/capabilities/registry.yaml').toString('utf8'));
   const empty = value => Array.isArray(value) && value.length === 0;
-  const engineering = knowledge.engineering;
+  if (!migrationSource && (knowledge.schema_version !== '2.0' || config.schema_version !== '0.9' || config.sources?.engineering !== undefined)) throw new Error('Incoming package must use current schemas; retired formats are import-only.');
+  const engineering = migrationSource ? knowledge.engineering : null;
+  const pristineKnowledge = knowledge.schema_version === '2.0'
+    ? empty(knowledge.module_files) && Array.isArray(knowledge.documents) && knowledge.documents.every(d => d.status === 'draft' && d.review === undefined)
+    : knowledge.observed_revision === null && knowledge.last_reviewed_at === null &&
+      knowledge.observed_at === null && knowledge.observed_worktree === 'unknown' &&
+      knowledge.source_content_included === false && empty(knowledge.modules) && empty(knowledge.known_gaps);
   if (config.project?.id !== 'replace-with-project-id' ||
       (config.sources?.engineering !== undefined && !empty(config.sources.engineering)) ||
-      knowledge.status !== 'draft' || knowledge.observed_revision !== null || knowledge.last_reviewed_at !== null ||
-      knowledge.observed_at !== null || knowledge.observed_worktree !== 'unknown' ||
-      knowledge.source_content_included !== false || !empty(knowledge.modules) || !empty(knowledge.known_gaps) ||
+      knowledge.status !== 'draft' || !pristineKnowledge ||
       (engineering && (!empty(engineering.contracts) || !empty(engineering.documents) ||
         engineering.coverage?.status !== 'not-assessed' || engineering.coverage?.inventory_complete !== false ||
         !empty(engineering.coverage?.scope) || !empty(engineering.coverage?.inventory) || !empty(engineering.coverage?.gaps) ||
@@ -224,23 +228,24 @@ export function mergeManagedEntry(local, incoming, previous, name = 'accord') {
   return { action: 'conflict', content: local, reason: 'Managed block differs locally; inspect the three-way diff before editing.' };
 }
 
-function recordPathPolicy(entry) {
-  const target = installationTarget(entry.source_path);
+function recordPathPolicy(entry, migrationSource = false) {
+  const target = installationTarget(entry.source_path, { migrationSource });
   if (target.path !== entry.path || target.policy !== entry.policy || !HASH.test(entry.source_sha256 || '') ||
       (entry.source_lf_sha256 !== undefined && (!HASH.test(entry.source_lf_sha256) || !textPath(entry.path) || target.policy !== 'runtime'))) throw new Error('Installation record has an invalid owner or source hash.');
   return target;
 }
 
-export function validateInstallationRecord(projectRoot, record, projectId) {
+export function validateInstallationRecord(projectRoot, record, projectId, { migrationSource = false } = {}) {
   const errors = [];
   const warnings = [];
   const structuralErrors = [];
   const drift = [];
+  const importingReceiptV1 = migrationSource && record?.schema_version === '1.0';
   const result = () => ({ errors: [...structuralErrors, ...errors], warnings, structural_errors: structuralErrors, drift });
-  if (!object(record) || !['1.0', '1.1'].includes(record.schema_version) || typeof projectId !== 'string' || !projectId.trim() || projectId === 'replace-with-project-id' || record.project_id !== projectId ||
+  if (!object(record) || !(record.schema_version === '1.1' || (migrationSource && record.schema_version === '1.0')) || typeof projectId !== 'string' || !projectId.trim() || projectId === 'replace-with-project-id' || record.project_id !== projectId ||
       record.source?.repository !== OFFICIAL || !REVISION.test(record.source?.revision || '') ||
       !HASH.test(record.source?.package_sha256 || '') || !['clean', 'dirty', 'unknown'].includes(record.source?.worktree) ||
-      !object(record.protocol) || ((record.schema_version === '1.1' || record.protocol.release !== undefined) && !VERSION.test(record.protocol.release || '')) ||
+      !object(record.protocol) || (!VERSION.test(record.protocol.release || '') && !(importingReceiptV1 && record.protocol.release === undefined)) ||
       ['version', 'configuration', 'knowledge'].some(key => typeof record.protocol[key] !== 'string' || !record.protocol[key]) ||
       !Array.isArray(record.files) || !record.files.length || record.files.length > LIMITS.files ||
       !Array.isArray(record.local_changes) || record.local_changes.length > LIMITS.files) {
@@ -260,20 +265,27 @@ export function validateInstallationRecord(projectRoot, record, projectId) {
   const owners = [];
   for (const entry of record.files) {
     try {
-      const target = recordPathPolicy(entry);
+      const target = recordPathPolicy(entry, migrationSource);
       if (seen.has(entry.path.toLowerCase())) throw new Error('Duplicate installation owner.');
       seen.add(entry.path.toLowerCase());
       if (local.has(entry.path.toLowerCase()) && local.get(entry.path.toLowerCase()).path !== entry.path) throw new Error('Local customization path must exactly match its owner.');
       owners.push({ entry, target });
     } catch (error) { structuralErrors.push(error.message); }
   }
-  for (const required of ['AGENTS.md', '.github/copilot-instructions.md', '.accord/accord.yaml', '.agents/skills/accord/SKILL.md', '.agents/skills/accord/scripts/accord-validate.mjs', ...(record.schema_version === '1.1' ? ['.accord/release.json'] : [])]) {
+  for (const required of ['AGENTS.md', '.github/copilot-instructions.md', '.accord/accord.yaml', '.agents/skills/accord/SKILL.md', '.agents/skills/accord/scripts/accord-validate.mjs', ...(!importingReceiptV1 ? ['.accord/release.json'] : [])]) {
     if (!seen.has(required.toLowerCase())) structuralErrors.push('Installation record omits a required owner: ' + required);
   }
   for (const change of local.values()) if (!seen.has(change.path.toLowerCase())) structuralErrors.push('Local change has no installed owner: ' + change.path);
   if (structuralErrors.length) return result();
   for (const { entry, target } of owners) {
     try {
+      // Canonical project documents are validated by their current registry, not
+      // rehashed against installation seeds on every task. Renames are legitimate.
+      if (target.policy === 'project-owned' && !local.has(entry.path.toLowerCase())) {
+        const file = contained(projectRoot, entry.path, true);
+        if (fs.existsSync(file) && !fs.statSync(file).isFile()) throw new Error('Project owner is not a regular file: ' + entry.path);
+        continue;
+      }
       const content = bytes(projectRoot, entry.path);
       const actual = target.policy === 'managed-block' ? block(content.toString('utf8'), target.block)?.text : content;
       if (actual === undefined) throw new Error('Managed installation block is absent: ' + entry.path);
@@ -292,7 +304,6 @@ export function validateInstallationRecord(projectRoot, record, projectId) {
     }
   }
   if (record.source.worktree !== 'clean') warnings.push('Installation source was ' + record.source.worktree + '; source commit alone does not identify the installed package.');
-  if (record.schema_version === '1.0') warnings.push('Legacy installation record: establish release tracking during the reviewed update.');
   warnings.push('Installation record checks declared provenance, not publisher identity or genuine human approval.');
   return result();
 }
@@ -314,7 +325,7 @@ export function inspectInstallation(projectRoot, config) {
       }
       if (metadata?.release_version !== config?.accord?.release || metadata?.protocol_version !== config?.accord?.version) errors.push('Configuration and release metadata versions do not match.');
     } else if (config?.accord?.release !== undefined) errors.push('Missing installed release metadata: .accord/release.json.');
-    else warnings.push('Legacy deployment has no release metadata; its release version is unknown.');
+    else errors.push('Release metadata is required; complete migration.');
   } catch (error) { errors.push('Release metadata: ' + error.message); }
   const configured = config?.accord?.installation_record;
   if (configured !== undefined && configured !== INSTALLATION_RECORD) {
@@ -324,7 +335,7 @@ export function inspectInstallation(projectRoot, config) {
     const content = bytes(projectRoot, INSTALLATION_RECORD, true);
     if (!content) {
       if (configured) errors.push('Missing installation record: ' + INSTALLATION_RECORD + '. Complete the reviewed adoption; do not invent an old baseline.');
-      else warnings.push('Legacy adoption has no installation record. Preserve project state and establish a reviewed baseline when upgrading.');
+      else errors.push('Installation receipt is required; complete migration.');
       return { errors, warnings, paths };
     }
     paths.push(INSTALLATION_RECORD);
@@ -343,7 +354,7 @@ export function inspectInstallation(projectRoot, config) {
 
 export function planAdoption(projectRoot, packageRoot, { previousPackageRoot } = {}) {
   const incoming = verifyReleasePackage(packageRoot);
-  const previous = previousPackageRoot ? verifyReleasePackage(previousPackageRoot, { allowLegacy: true }) : null;
+  const previous = previousPackageRoot ? verifyReleasePackage(previousPackageRoot, { migrationSource: true }) : null;
   const oldFiles = new Set(previous?.files.map(entry => entry.source_path) || []);
   const actions = [];
   const seenTargets = new Set();
@@ -352,7 +363,7 @@ export function planAdoption(projectRoot, packageRoot, { previousPackageRoot } =
   let installationIssues = [];
   if (record) {
     const localConfig = parse(bytes(projectRoot, '.accord/accord.yaml').toString('utf8'));
-    const checked = validateInstallationRecord(projectRoot, record, localConfig.project?.id);
+    const checked = validateInstallationRecord(projectRoot, record, localConfig.project?.id, { migrationSource: true });
     if (checked.structural_errors.length) throw new Error('Existing installation record requires reconciliation: ' + checked.structural_errors.join('; '));
     installationIssues = checked.drift;
     if (previous && previous.package_sha256 !== record.source.package_sha256) throw new Error('The previous package does not match the installation record; do not use it as a three-way baseline.');
@@ -399,7 +410,7 @@ export function planAdoption(projectRoot, packageRoot, { previousPackageRoot } =
     actions.push({ ...target, source_path: entry.source_path, ...action });
   }
   for (const entry of recorded.values()) {
-    recordPathPolicy(entry);
+    recordPathPolicy(entry, true);
     if (!seenTargets.has(entry.path)) actions.push({ path: entry.path, policy: entry.policy, action: 'review-retirement', reason: 'No longer in the package; no deletion is authorized by this plan.' });
   }
   const version = versionTransition(record?.protocol?.release, incoming.release.release_version);

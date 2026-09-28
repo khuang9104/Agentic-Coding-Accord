@@ -25,16 +25,16 @@ in `architecture.md`; command discovery does not mean execution or permission.
 
 List stable module boundaries, public contracts, schemas, data stores, and
 high-churn or high-consequence areas that an Agent should inspect before an
-implementation Change. Link to `modules/`, `architecture.md`, or
+implementation work. Link to `modules/`, `architecture.md`, or
 `interfaces-and-data.md`.
 
 ## Retrieval rules
 
-1. Read this file first for ordinary coding; go directly to relevant docs for a specific question.
+1. Read the closest owner first; use this optional navigation when the owner is unclear.
 2. Load `system-overview.md` only for needed purpose/boundary facts.
 3. Load `architecture.md` only for needed runtime, dependency or flow facts.
 4. Load the relevant module and interface documents before changing a boundary.
-5. For material work, use the applicable Change and its input/evidence references.
+5. For material work, use the selected Issue/PR, local work item and its input/evidence references.
    Reuse valid context and decisions; an unrelated message or commit is not a reset.
 
 ## Provenance

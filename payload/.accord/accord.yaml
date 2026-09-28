@@ -1,8 +1,8 @@
 {
-  "schema_version": "0.8",
+  "schema_version": "0.9",
   "accord": {
-    "version": "0.9.0",
-    "release": "0.9.1",
+    "version": "0.10.0",
+    "release": "0.10.0",
     "installation": "vendored",
     "installation_record": ".accord/installation.json"
   },
@@ -42,12 +42,11 @@
     "traceability": "stable-references"
   },
   "sources": {
-    "coding_practices": "docs/engineering/coding-practices.md",
-    "engineering": []
+    "coding_practices": "docs/engineering/coding-practices.md"
   },
   "knowledge_base": {
     "required": true,
-    "structure_version": "1.4",
+    "structure_version": "2.0",
     "root": "docs",
     "manifest": "docs/manifest.yaml",
     "source_content_included": false,
@@ -90,10 +89,6 @@
     "removal": "explicit-human-approval",
     "unmanaged_use": "allowed-record-material-use",
     "unmanaged_lifecycle": "user-controlled"
-  },
-  "changes": {
-    "active_directory": ".accord/changes",
-    "record_directory": ".accord/records"
   },
   "risk": {
     "levels": [
@@ -140,5 +135,15 @@
     "verification_target": "approved-requirements-and-design-inputs",
     "validation_target": "user-needs-and-intended-use",
     "revision_binding_required": true
+  },
+  "documentation": {
+    "policy": ".accord/documentation-policy.yaml"
+  },
+  "governance": {
+    "policy": ".accord/governance.yaml"
+  },
+  "work": {
+    "carrier": "github-preferred",
+    "local_directory": ".accord/work"
   }
 }

@@ -56,7 +56,7 @@ decision before applying it.
 | Agent entry files | Merge payload entry blocks into `AGENTS.md` and `.github/copilot-instructions.md` | Update only the marked Accord blocks; retain all other content |
 | Practices and project docs | Create missing standard files and populate them from project evidence | Retain authored content, module IDs and review history; update only affected explanations or approved layout migrations |
 | Capabilities | Carry catalog, routes, compressed snapshot and empty registry | Update compatible catalog/routes/runtime together; retain installed registry entries, custom triggers and unrelated Skills |
-| Changes, Records and licenses | Create control directories; copy `ACCORD-LICENSE` without replacing the project license | Preserve active Changes, accepted Records and project license; retain upstream notices |
+| Work, policies and licenses | Configure documentation/governance policies and preferred Issue/PR or local carrier; copy `ACCORD-LICENSE` | Merge policies; preserve existing work, needed work facts, project license and upstream notices; retire obsolete files |
 
 Use only the payload's runtime/control files and missing document templates.
 Do not copy this distribution's `.git/`, release README, guide or expanded
@@ -83,38 +83,36 @@ select `initial-knowledge`, load and apply acquisition and architecture methods,
 use the bounded inventory, and populate the standard `docs/` view with source
 provenance. Confirm actual architectural modules, not one file per code folder.
 Keep requirements, Design Inputs, V&V and other canonical engineering records
-in their existing owners. Keep the manifest `draft` until the human reviews
-coverage, conflicts and gaps; `current` also requires a clean observed revision.
+in their existing owners, registered once in knowledge 2.0. Keep the manifest
+`draft` until coverage, conflicts, scoped source observations and gaps have been
+reviewed. A mechanical check cannot certify semantic completeness.
 
 An update does not require rebuilding all project documentation. Use a targeted
 refresh only when facts or structure change. For old `docs/knowledge/` layouts,
-compare destination collisions and merge to structure 1.2; preserve historical
-Records and unrelated files. Never set an old view to `current` merely because
+resolve legacy layout collisions before proposing a registry migration; preserve
+historical Records and unrelated files. Never set an old view to `current` merely because
 the runtime update passed validation.
 
-New adoptions use documentation structure 1.4 / engineering 1.1. Runtime 0.9
-still reads knowledge 1.2/1.3 and historical Change/Record 0.8. Configuration
-and entry markers remain 0.8; route/registry remain 1.3/1.1. Use new 0.9
-templates for new work, not a wholesale rewrite of history.
+New adoptions use knowledge 2.0, configuration 0.9 and protocol 0.10.0.
+Entry markers remain 0.8; route/registry remain 1.3/1.1. Read
+`references/project-knowledge.md` for hierarchical module declarations and the
+editable documentation policy; `references/team-work.md` covers Issue/PR work,
+local fallback, and delegated or independent-domain governance. Configure real
+owners and domains; the example local identity does not authenticate a reviewer.
 
-For 1.3 → 1.4, follow the migration in `references/engineering-documents.md`:
-preserve the old global observation and inventory, add empty scopes and reviewed
-module lists, retain previous assessment outcomes in the V&V owner and start a
-new run as not-run. Old global review is not a per-module review.
-For a 1.2 project, preserve
-existing content and approvals, update config and manifest versions together,
-and add the `engineering` extension from `payload/docs/manifest.yaml` with
-coverage `not-assessed` and reconstruction `not-run`. Do not replace the whole
-manifest. Copy the complete runtime, including its contract/engineering helpers.
-Register existing needs, inputs, decisions and issue owners in
-`sources.engineering`. Follow `references/engineering-documents.md` for complete
-applicable fields, enums, state rules, optional detail paths and explicit gaps.
-The current exact reader supports JSON Schema/OpenAPI JSON, not automatic
-SQL or arbitrary-language extraction. Mechanical success is not a reconstruction
-pass. The legacy 1.2 layout remains readable without the extension.
+Updates migrate directly to the current format. Run `accord-migrate.mjs --project
+<target>` for a one-way metadata proposal, preserve stable IDs and useful content,
+resolve actual collisions, and apply registry/config/policies together. Transfer
+active work to Issue/PR or local work; move lasting conclusions into canonical
+owners. Remove retired Change/Record files, old readers/templates and obsolete
+`sources.engineering`, `changes`, `records` settings. Git retains historical
+versions. Do not keep conflicting old instructions as an alternate workflow or
+infer new approval from old observations. New installation receipts use 1.1;
+old receipts are read only while planning migration. Exact comparison supports
+JSON Schema/OpenAPI JSON; other languages still need focused inspection.
 
-Route schemas 1.0 and 1.1 remain valid with the new runtime. Enabling schema 1.2
-adds existing-stack V&V and browser-testing routes; review and merge runtime,
+Only route schema 1.3 runs in the current runtime. It includes existing-stack
+V&V and browser-testing routes; review and merge runtime,
 routes, catalog and entry blocks together, preserving custom triggers and
 project approvals. Bundled method excerpts need no upstream installation;
 browser tools and other dependencies still require separate approval. `--task`
@@ -140,8 +138,8 @@ managed-block differences, supply a reviewed project-relative JSON array through
 `--local-changes`; do not record unexplained drift as approved. Existing project
 documents and configuration values are not required to match blank templates.
 Unknown source revisions cannot produce a verified record: report the limit
-and obtain the intended pinned source rather than inventing a commit. Legacy
-projects without a record remain readable with a warning, not a silent reset.
+and obtain the intended pinned source rather than inventing a commit. Projects
+without a current receipt must complete migration before validation can pass.
 
 From the target root, run the checks below. Replace `<distribution-root>` with
 the absolute path of the inspected, pinned source checkout, and `<full-commit>`
@@ -227,7 +225,7 @@ README 和本指南，哈希也不能代替发布者身份认证。无需另行�
 - 实践与文档：仅创建缺少的标准文件；更新保留已有内容、模块 ID 和审核记录。
   初始实践先发现已有规范，再问用户哪些需要迁移，不自动宣布为已批准规则。
 - 能力：同步目录、路由、快照和运行文件，保留已安装 registry、用户触发词和其他 Skills。
-- 状态与许可：保留 Changes、Records 和项目 LICENSE；使用 `ACCORD-LICENSE` 保留
+- 状态与许可：迁移工作与证据，移除旧载体，保留项目 LICENSE；使用 `ACCORD-LICENSE` 保留
   Accord MIT 声明，并保留第三方许可。
 
 按 `payload/.agents/skills/accord/references/adoption-and-update.md` 执行共同的
@@ -255,24 +253,22 @@ README 和本指南，哈希也不能代替发布者身份认证。无需另行�
 后，才能将 manifest 从 `draft` 改为 `current`。
 
 更新运行文件不等于需要重建全部文档。有实际事实或结构变化时才按影响刷新；旧
-`docs/knowledge/` 迁移到结构 1.2 时，先检查同名冲突，保留用户内容和历史 Record。
+`docs/knowledge/` 应先解决旧布局冲突，再提出登记迁移方案，保留用户内容和历史 Record。
 校验通过不能自动把旧知识状态改成 `current`。
 
-新项目采用文档结构 1.4 / engineering 1.1。0.9 运行文件仍可读取知识 1.2/1.3 和历史
-Change/Record 0.8。配置与入口标记仍为 0.8，路由/registry 仍为 1.3/1.1；新工作使用 0.9
-模板，不批量重写历史。
+新项目采用知识结构 2.0、配置 0.9、协议 0.10.0。入口标记仍为 0.8，路由/registry
+仍为 1.3/1.1。按 `references/project-knowledge.md` 配置分层模块和可修改的文档政策；
+按 `references/team-work.md` 选择 Issue/PR 或本地工作载体，以及委托或模块独立决策模式。
+配置真实负责人和权限域；默认的本地示例身份不能证明 GitHub 评审者身份。
 
-1.3 → 1.4 按 `references/engineering-documents.md` 迁移：保留原全局观察与清单，
-新增 scopes 和已审核模块列表初始为空；旧评估结果保留于 V&V 来源，新一轮初始 not-run。
-不能把全局审核自动转成逐模块审核。旧 1.2 项目保留已有内容与审批，同步更新配置和 manifest 版本，
-从 `payload/docs/manifest.yaml` 合并 `engineering` 扩展：覆盖初始为 `not-assessed`，
-重建为 `not-run`，不覆盖整个 manifest。运行文件完整更新，包含新增契约与工程校验模块。
-在 `sources.engineering` 登记已有需求、设计输入、决定和问题来源；按
-`references/engineering-documents.md` 记录适用的完整字段、枚举、状态规则、按需详情与缺口。
-当前精确提取仅支持 JSON Schema/OpenAPI JSON，SQL 和其他语言仍需有界核实。机械校验
-不代表重建通过；没有新扩展的 1.2 结构仍可读取。
+更新直接迁移到当前格式。用 `accord-migrate.mjs --project <目标根目录>` 得到单向
+元数据转换建议，保留稳定 ID 和有用内容，解决实际冲突，一起更新登记、配置和政策。
+活动工作转到 Issue/PR 或本地 work，持久结论归入规范所有者；随后移除旧 Change/Record
+文件、读取器、模板及 `sources.engineering`、`changes`、`records` 配置，不保留冲突旧流程。
+历史交给 Git，不能从旧观察推导新批准。安装收据更新为 1.1，旧收据仅作为迁移输入。
+精确比较支持 JSON Schema/OpenAPI JSON，其他语言仍需有界核实。
 
-新版运行文件继续支持路由 schema 1.0 和 1.1。采用 1.2 的现有测试栈 V&V 和浏览器测试
+当前运行文件只支持路由 schema 1.3，包含现有测试栈 V&V 和浏览器测试
 路由时，审核并同步合并路由、目录、运行文件和入口，保留自定义触发词、授权及输出。
 浏览器工具和依赖仍需单独批准。`--task` 只对明确、肯定的单一意图选择路由；已审核的完整
 工作流别名（例如 `organize project documentation and knowledge` 或 `整理项目文档和知识库`）
@@ -292,7 +288,7 @@ Change/Record 0.8。配置与入口标记仍为 0.8，路由/registry 仍为 1.3
 有意保留的运行文件／入口区块差异通过 `--local-changes` 提供已审核的项目相对路径
 JSON 数组，不能把不明变更随意登记为已批准。项目文档和配置无需匹配空白模板。
 来源 revision 未知时报告限制，取得预期的固定来源后再记录，不能编造 commit。
-没有安装记录的旧项目仍可读取并产生提示，不会因此重置状态。
+没有当前安装收据的项目需完成迁移；不能把部分更新当作已通过校验。
 
 在目标项目根目录运行。将 `<发布目录>` 换成已检查的固定来源目录的绝对路径，
 `<完整commit>` 换成实际观察到的完整 revision；来源工具位于 `payload/` 下：

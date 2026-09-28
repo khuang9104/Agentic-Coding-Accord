@@ -5,10 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { readAndVerifyCapabilityBundle } from './accord-capability-bundle.mjs';
 import { parseExactJson } from './accord-contracts.mjs';
 import { readMethodRegistry, validateMethodRegistry, inspectRegisteredMethod } from './accord-methods.mjs';
-import { ROUTE_CONTRACTS as CONTRACTS, KNOWLEDGE_SCHEMAS, methodContribution } from './accord-protocol.mjs';
+import { ROUTE_CONTRACTS as CONTRACTS, methodContribution } from './accord-protocol.mjs';
 
-const LEGACY_ROUTES = ['initial-knowledge', 'change-context', 'knowledge-refresh', 'knowledge-query'];
-const V11_ROUTES = [...LEGACY_ROUTES, 'documentation-writing', 'bug-reproduction', 'refactor-planning'];
 const ROUTE_PROCEDURES = {
   'knowledge-query': 'references/knowledge-query-and-refresh.md',
   'documentation-writing': 'references/documentation-writing.md',
@@ -34,17 +32,17 @@ const BASELINE_CONTRACT = 'Inherit the current work unit, human decisions and af
 const TASK_ADAPTATIONS = {
   'documentation-writing': [
     'Infer audience, purpose, scope and document type from the request and existing project facts. Reuse the current outline when suitable; upstream mandatory clarification and outline-approval pauses do not override settled user direction.',
-    'Write only the requested document or approved sections in existing canonical owners. Do not create four Diataxis directories, a second knowledge base, or a Change just for a small edit. Null output_root and empty output lists grant no arbitrary write permission.',
+    'Write only the requested document or approved sections in existing canonical owners. Do not create four Diataxis directories, a second knowledge base, or a work record just for a small edit. Null output_root and empty output lists grant no arbitrary write permission.',
     'Use current documentation first. Inspect targeted primary sources for missing, stale or disputed facts; use knowledge acquisition only for a genuine evidence gap, never an automatic full scan.'
   ],
   'bug-reproduction': [
     'Preserve revision-bound expected/actual behavior, environment, minimal steps, fixture, repeatability, evidence and unknowns before changing the failing implementation. Record intermittent or unconfirmed failures honestly.',
     'Upstream stop-before-repair applies to the reproduction phase, not the whole user task. For a reproduction-only request stop after evidence; for diagnosis continue analysis without repair; for an authorized repair continue through the existing Accord implementation and V&V gates without asking again for settled authority.',
-    'Use the existing Change or response and link test evidence. Create fixtures only within authorized scope in existing test locations; do not require a separate bug brief file or Change for read-only work.'
+    'Use the selected work carrier or response and link test evidence. Create fixtures only within authorized scope in existing test locations; do not require a separate bug brief file or work record for read-only work.'
   ],
   'refactor-planning': [
     'Reuse a sufficient current Context Map; load context-engineering only when affected owners, dependencies or tests remain unknown. Do not scan or plan twice.',
-    'Sequence the relevant contracts, implementations, callers and tests around preserved behavior, phase checks and recovery. Keep the plan in the existing Change, or the response for planning-only work; do not create a competing plan file.',
+    'Sequence the relevant contracts, implementations, callers and tests around preserved behavior, phase checks and recovery. Keep the plan in the selected work carrier, or the response for planning-only work; do not create a competing plan file.',
     'Upstream mandatory confirmation after planning does not override existing implementation approval. Planning-only requests stop after the plan; approved implementation continues under existing Accord gates. Ask only for unresolved behavior-changing decisions, not equivalent internal steps.'
   ],
   'web-testing': [
@@ -104,12 +102,11 @@ function readJson(root, relativePath) {
 
 export function validateRouteConfig(routes) {
   const errors = [];
-  if (!['1.0', '1.1', '1.2', '1.3'].includes(routes?.schema_version) || routes.route_config !== 'accord-capability-routes' ||
+  if (routes?.schema_version !== '1.3' || routes.route_config !== 'accord-capability-routes' ||
       routes.mode !== 'approved-integrated-adapters' || !Array.isArray(routes.routes)) {
     return ['Capability route configuration identity or schema is invalid.'];
   }
-  const expected = routes.schema_version === '1.0' ? LEGACY_ROUTES
-    : routes.schema_version === '1.1' ? V11_ROUTES : Object.keys(CONTRACTS);
+  const expected = Object.keys(CONTRACTS);
   const seen = new Set();
   for (const route of routes.routes) {
     const contract = route && Object.hasOwn(CONTRACTS, route.id) ? CONTRACTS[route.id] : null;
@@ -118,7 +115,7 @@ export function validateRouteConfig(routes) {
       continue;
     }
     seen.add(route.id);
-    if (routes.schema_version === '1.3' && Object.keys(route).some(key =>
+    if (Object.keys(route).some(key =>
       !['id', 'purpose', 'triggers', 'methods', 'output_root', 'durable_outputs', 'temporary_outputs', 'approval'].includes(key))) {
       errors.push('Capability route contains an unknown field: ' + route.id);
     }
@@ -127,21 +124,15 @@ export function validateRouteConfig(routes) {
       errors.push('Capability route triggers must be non-empty strings: ' + route.id);
     }
     if (typeof route.purpose !== 'string' || !route.purpose.trim()) errors.push('Capability route needs a purpose: ' + route.id);
-    const temporary = route.id === 'change-context' ? ['.accord/changes/<change-id>.md'] : [];
-    const methodsValid = routes.schema_version === '1.3'
-      ? Array.isArray(route.methods) && route.methods.length <= 8 && new Set(route.methods).size === route.methods.length &&
+    const temporary = [];
+    const methodsValid = Array.isArray(route.methods) && route.methods.length <= 8 && new Set(route.methods).size === route.methods.length &&
         route.methods.every(id => typeof id === 'string' && id.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) &&
           (!Object.hasOwn(METHOD_FILES, id) || contract.methods.includes(id))) &&
         (contract.methods.length === 0 || route.methods.length > 0) &&
-        (route.id !== 'knowledge-query' || route.methods.length === 0)
-      : JSON.stringify(route.methods) === JSON.stringify(contract.methods);
+        (route.id !== 'knowledge-query' || route.methods.length === 0);
     const expectedRoot = Object.hasOwn(contract, 'root') ? contract.root
-      : route.id === 'change-context' ? '.accord/changes/' : 'docs';
-    // Legacy projects used the implicit docs root for knowledge-query; a
-    // freshly downgraded config may already carry the safer null root. Both
-    // are read-only, so preserve compatibility without granting write scope.
-    const allowedRoots = routes.schema_version !== '1.3' && route.id === 'knowledge-query'
-      ? ['docs', null] : [expectedRoot];
+      : route.id === 'change-context' ? null : 'docs';
+    const allowedRoots = [expectedRoot];
     if (!methodsValid ||
         JSON.stringify(route.durable_outputs) !== JSON.stringify(contract.outputs) ||
         JSON.stringify(route.temporary_outputs) !== JSON.stringify(temporary) ||
@@ -194,8 +185,8 @@ function loadProject(projectInput) {
   if (config.capabilities?.routes !== '.accord/capabilities/routes.yaml' ||
       config.capabilities?.catalog !== '.accord/capabilities/catalog/index.yaml' ||
       config.capabilities?.snapshot_root !== '.accord/capabilities/snapshots' ||
-      config.knowledge_base?.root !== 'docs' || !KNOWLEDGE_SCHEMAS.has(config.knowledge_base?.structure_version)) {
-    throw new Error('Capability routing requires a supported docs/ structure (1.2–1.4); complete the adoption migration first.');
+      config.knowledge_base?.root !== 'docs' || config.knowledge_base?.structure_version !== '2.0') {
+    throw new Error('Capability routing requires a knowledge 2.0 registry; complete the adoption migration first.');
   }
   const routes = readJson(projectRoot, config.capabilities.routes);
   const errors = validateRouteConfig(routes);
@@ -206,7 +197,7 @@ function loadProject(projectInput) {
 function chooseRoute(project, { intent, task }) {
   if (intent) {
     const route = project.routes.routes.find((candidate) => candidate.id === intent);
-    if (!route) throw new Error('Unknown capability route: ' + intent + '. New routes require a reviewed routes.yaml upgrade (1.1 for writing/reproduction/refactoring; 1.2 for testing).');
+    if (!route) throw new Error('Unknown capability route: ' + intent + '. Use a current standard route in routes.yaml.');
     return { route, confidence: 'explicit' };
   }
   const normalized = String(task || '').trim().toLowerCase();
@@ -240,6 +231,7 @@ export function routeTask(projectInput, options = {}) {
     ...Object.fromEntries(['id', 'purpose', 'triggers', 'methods', 'output_root', 'durable_outputs', 'temporary_outputs', 'approval']
       .map(key => [key, selection.route[key]])),
     schema_version: '1.0', status: 'selected', confidence: selection.confidence, task: options.task || null,
+    project_navigation: 'For knowledge 2.0, use accord-project.mjs --modules <ids> [--impact] to select canonical owners. This flow selector does not scan project documents or history.',
     contributions: selection.route.methods.map(id => methodContribution(selection.route.id, id)),
     method_requirements: selection.route.methods.filter(id => !Object.hasOwn(METHOD_FILES, id))
       .map(id => projectMethod(project, selection.route, id).requirements),
@@ -341,13 +333,13 @@ function readMethod(project, intent, methodId, { reference, view = 'execution' }
       BASELINE_CONTRACT,
       ...(TASK_ADAPTATIONS[intent] || [
       'Keep analysis bounded to the user request. Use accord-inventory.mjs when breadth is needed; never execute upstream scan.py, copy its templates, or create docs/codebase/.',
-      'Map findings to the existing docs/ files and canonical engineering owners. Do not create a single competing summary, a separate plan, or a fixed document pack per source folder.',
+      'Map findings to registered canonical owners under the editable documentation policy; null route outputs do not prescribe a file pack or grant arbitrary write scope. Do not create a single competing summary, a separate plan, or a fixed document pack per source folder.',
       'Use arch Documentation mode only for relevant architecture. Skip unrelated EOL audits, modernization, remote lookup, and dependency actions unless separately requested.',
-      'Keep Context Map in the active Change when one exists, or in the answer for read-only work. Apply the existing Accord approval gate; do not re-request settled approvals.',
+      'Keep Context Map in the selected work carrier when one exists, or in the answer for read-only work. Apply the existing Accord approval gate; do not re-request settled approvals.',
       'Record gaps explicitly; distinguish current implementation, approved target, and inference. Verify claims against sources, then refresh agent-context.md if its summary changed.'
       ]),
       'Keep user scope, existing approvals and canonical owners. Method loading grants no installation, dependency, network, Git-write or acceptance authority. Read-only tasks remain read-only.',
-      'Loaded does not mean applied. Report the method, pinned revision, explored scope, outputs/evidence, and any skip or failure. Record material use in the existing Change and Record.'
+      'Loaded does not mean applied. Report the method, pinned revision, explored scope, outputs/evidence, and any skip or failure. Record material use in the selected work carrier.'
     ],
     files,
     optional_reference: methodId === 'acquire-codebase-knowledge' && !reference ? 'Use --reference stack-detection only when the stack is ambiguous.' : null

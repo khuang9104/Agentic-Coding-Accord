@@ -16,7 +16,7 @@ independent repository-discovery and `docs/project-summary.md` workflow.
    `docs/presentations/diagrams/<diagram-id>.drawio`, matching `.png` files,
    and `docs/presentations/project-overview.docx`; these are derived outputs,
    not canonical knowledge.
-3. A requested format conversion needs no new engineering Change. Creating
+3. A requested format conversion needs no new engineering work item. Creating
    new substantive claims follows the corresponding engineering scope. Installing or
    updating Node.js, npm packages, a browser, draw.io, or any other dependency
    requires a separate explicit decision.
@@ -54,7 +54,7 @@ approval.
 - Check labels, file references, module boundaries, interfaces, and flows
   against the current knowledge revision and cited repository sources.
 - Record generated paths, tools and versions, failed renderers, omissions, and
-  review evidence in the existing Change, or the response for a standalone render. Never mark presentation output as the
+  review evidence in the selected work carrier, or the response for a standalone render. Never mark presentation output as the
   canonical source of project facts.
 
 This adapter incorporates integration-reviewed components from the

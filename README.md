@@ -2,287 +2,273 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-**A human-directed framework for agentic software engineering.**
+**A repository-local software engineering protocol and harness for human–agent collaboration.**
 
-Accord gives coding agents a shared engineering workflow inside your repository:
-clarify user needs, agree on design inputs, implement, and review against those
-inputs and needs through verification and validation (V&V). You own material
-decisions and acceptance; the Agent analyzes, implements and gathers evidence.
-Maintained project documentation connects those decisions to the actual design
-for later development, handover and knowledge-base queries.
+Accord connects **requirements and design inputs, module contracts, project knowledge,
+verification and validation (V&V), and decision authority** in a versioned engineering
+workflow. Humans define objectives, resolve material trade-offs and accept results.
+Coding agents analyze, implement and verify within authorized scope, maintaining
+traceable engineering evidence.
 
-Works with **Codex and GitHub Copilot in VS Code**. Distributed as instructions,
-templates and local scripts—not another coding agent, installer or hosted service.
+Supports **Codex and GitHub Copilot in VS Code**. Shared instructions, configurable
+documentation policies and local validation tools live in Git, supporting work across
+sessions, offline development and optional GitHub integration.
 
-> Accord works in shared Git/GitHub repositories: engineering rules and project
-> documents travel with the code, alongside your branch, PR and review workflow.
-> Its decision process still assumes one accountable human lead. Multi-person
-> approvals, consensus handling and team configuration are not yet implemented.
+[Capabilities](#core-capabilities) · [Quick start](#quick-start) · [Workflow](#engineering-workflow) · [Project knowledge](#project-documentation-and-knowledge) · [Governance](#collaboration-and-governance) · [Extensions](#methods-and-extensions)
 
-[Quick start](#quick-start) · [How it works](#how-it-works) · [Project knowledge](#project-documentation-and-knowledge) · [Included methods](#awesome-copilot-methods)
+## Core capabilities
 
-## Why Accord?
+| Module | Engineering mechanism | Purpose |
+| --- | --- | --- |
+| **Requirements and design inputs** | Define behavior, quality constraints, interface contracts and acceptance criteria; link requirements, implementation and evidence | Establish a consistent basis for agent execution and human review |
+| **Context and knowledge management** | Route by task, register hierarchical modules and document owners, use dependency analysis to identify affected scope | Load relevant context and maintain development and operations knowledge |
+| **Verification and validation** | Verify against design inputs and validate against usage scenarios; bind evidence to Git revisions and input digests | Distinguish implementation conformance, user-need satisfaction and unverified scope |
+| **Collaboration and governance** | Use Issues/PRs or local work items; configure delegated or federated decision authority | Define module authority, cross-domain approval and integration responsibilities |
 
-Coding agents can produce code quickly. Keeping intent, implementation and
-project knowledge aligned takes more than a chat history.
-
-- **Agree on the intended behavior.** Explore requirements, dependencies
-  and trade-offs with the Agent; unresolved material choices stay with you.
-- **Review against the right target.** Link user needs and approved design
-  inputs to verification and validation (V&V), not just a passing test suite.
-- **Keep modules aligned.** Define inputs, guarantees and failure behavior;
-  check affected consumers when a boundary changes.
-- **Keep useful project knowledge.** Record architecture, module behavior,
-  interfaces and data contracts; update affected sections when the system changes.
-- **Carry the workflow with the project.** Shared instructions, coding practices
-  and reviewed methods travel with the repository across sessions and machines.
+Capabilities are selected for the current task. Questions read relevant sources;
+local edits check affected boundaries; cross-module or high-risk work adds the
+appropriate design, impact analysis and verification. Decisions and evidence are
+reused while their applicability conditions remain valid.
 
 ## Quick start
 
-You need Git, Node.js, and a coding agent with local file and command access.
-Fetching this repository requires network access; a prepared local copy also
-works. GitHub hosting is optional for your own project.
+Prerequisites: Git, Node.js, and a coding agent with project file and command access.
+Use the official repository or a previously obtained local checkout. The target
+project can operate with local Git alone.
 
-### 1. Ask your Agent to install Accord
+### 1. Install or update project configuration
 
-Open the **target project** in Codex or GitHub Copilot Agent mode and paste:
+Open the **target project** in Codex or GitHub Copilot Agent mode and submit:
 
 ```text
-Install or update Accord in this project from:
+Install or update Accord in this project from the official repository:
 https://github.com/khuang9104/Agentic-Coding-Accord
 
-Fetch a separate checkout, record its full commit, and follow
-CONFIGURE_WITH_AGENT.md from that same checkout.
-Preserve my existing project documents, settings, Skills, history and
-non-Accord content in Agent instructions. Apply conflict-free merges;
-ask about unresolved conflicts or actions I have not authorized.
-Verify the package and installed files using that checkout's tools.
-Report the old/new version, source commit, changes, check results and
-remaining actions. Do not report a partial update as complete.
+Obtain a separate source checkout, record its full commit, and follow
+CONFIGURE_WITH_AGENT.md from that same checkout. Preserve existing project
+documents, configuration, Skills and non-Accord Agent instructions.
+Apply authorized, conflict-free merges; batch unresolved material conflicts
+or authorization gaps. Verify the package and installation using that
+checkout's tools. Report versions, provenance, changes, check results
+and unfinished work.
 ```
 
-The Agent merges the Codex and Copilot entry blocks, configures Accord and checks
-existing coding practices. Initial setup builds a project documentation view
-from existing sources; updates preserve it and refresh only affected content.
-It asks before Git initialization, commits or dependency installation unless
-you have already authorized those actions. Generated facts still need review.
+The Agent merges entry instructions, configures engineering policies and registers
+existing project sources. Initial adoption establishes a project knowledge view;
+subsequent updates migrate the relevant differences. Git initialization, commits
+and dependency installation follow applicable authorization; previously authorized
+actions need no repeated confirmation. For offline adoption, replace the URL with
+the path to an existing source checkout.
 
-**Updating later:** use the same prompt. Existing project content is merged,
-not reset to blank templates. For offline adoption, replace the URL with the
-path to a previously downloaded checkout.
+The [installation and update guide](CONFIGURE_WITH_AGENT.md) covers configuration,
+migration and provenance verification. See [release metadata](RELEASE.json) for this
+checkout's version.
 
-See the [installation and update guide](CONFIGURE_WITH_AGENT.md) for manual
-copying, version tracking, conflict handling and migration. Copying `payload/`
-alone does not complete configuration.
+**Optional Copilot plugin:** the [Accord project setup entry](plugins/agentic-coding-accord/README.md)
+provides installation, version inspection and update entry points, pinned to a tested
+distribution. Plugin updates and target-project updates are separate operations;
+the plugin's pinned version may lag behind the default branch. The prompt above
+works with both Codex and Copilot.
 
-**Optional Copilot plugin:** install the [project setup entry](plugins/agentic-coding-accord/README.md)
-from this repository's marketplace. It pins a tested Accord distribution and
-supports setup, local version checks and project updates. Updating the plugin
-does not update project files; ask it to update the project and verify the merge.
-Its pinned distribution may lag behind the default branch; request a specific
-official revision if needed. See [release metadata](RELEASE.json) for this checkout's version.
-The prompt-based installation above remains available to both Codex and Copilot.
+### 2. Submit an engineering task
 
-### 2. Start with a normal project request
-
-No new slash commands are required. For example:
+Describe the intended behavior, constraints and scope directly:
 
 ```text
 Add order cancellation before shipment. Keep completed orders unchanged.
-Help me clarify refund and stock-restoration behavior, then propose design
-inputs and acceptance scenarios. Leave undecided choices open.
+Define refund and stock-restoration rules, design inputs and acceptance
+scenarios. Ask only about unresolved choices that affect behavior,
+then complete implementation and verification.
 ```
 
-Or, for an existing project:
+An existing project can start by establishing its knowledge baseline:
 
 ```text
-Organize project documentation and knowledge. Cover the architecture, module
-behavior, API inputs/outputs, database fields and enums. Reuse existing
-documents, distinguish approved requirements from observed code, and list gaps.
+Organize project documentation and knowledge. Cover system architecture,
+module responsibilities, API contracts, data fields, enums and operations.
+Reuse canonical sources, distinguish approved requirements from observed
+implementation, and report missing or unverified information.
 ```
 
-Clear instructions can already supply a decision and permission to implement.
-Accord asks about missing material choices—not for the same approval again.
+## Engineering workflow
 
-## How it works
+Accord organizes requirements engineering, contract design and V&V into an
+iterative workflow:
 
-Accord treats human–agent collaboration as more than approval at the end.
-The Agent helps frame the problem, explores options and brings consequential
-uncertainties back to you. The goal is bounded autonomy with less unnecessary
-confirmation and rework—not removing the human from engineering decisions.
-
-The workflow applies a **V-model approach**: define what the result must satisfy,
-then use verification and validation as feedback throughout the change.
-
-| Stage | What happens |
+| Stage | Inputs and outcomes |
 | --- | --- |
-| Clarify | The Agent explores the need, affected modules, scenarios and trade-offs with you. |
-| Define | Agreed requirements become **design inputs**: behavior, constraints, interface/data contracts and acceptance criteria. |
-| Implement | The Agent works within the approved scope and maintains a **Change**: the current delta, decisions and evidence references. |
-| Verify | Check that the implementation meets the approved requirements and design inputs. |
-| Validate | Check that the integrated result meets user needs in representative usage scenarios. |
-| Accept | You review the evidence and remaining gaps. A compact Record links the accepted result to its Git revision once committed. |
+| Requirements analysis | Identify stakeholders, usage scenarios, intended behavior, scope and material trade-offs |
+| Design inputs | Translate agreed requirements into behavior, interfaces, data and quality constraints, with decidable acceptance criteria |
+| Implementation | Modify code and related engineering sources within authorized scope; retain deltas and decision bases in the existing work item |
+| Verification | Check conformance to requirements and design inputs, retaining test or analysis evidence |
+| Validation | Assess whether the integrated result meets user needs in representative usage scenarios |
+| Acceptance | Authorized owners review results, evidence and remaining gaps against the actual version |
 
-New or changed requirements return only the affected decisions to this flow.
-Old documents and tests describe the baseline; they do not overrule a deliberate
-change in user direction. Small, reversible edits use proportionate checks
-rather than the full material-change process.
+The workflow adopts the V-model correspondence between requirements, design and
+verification activities while supporting incremental implementation and feedback.
+Requirement changes reopen affected decisions; existing documentation, code and
+tests form a revisable baseline. Acceptance, commit, merge and deployment are
+separate events.
 
-### Module boundaries
+## Agent execution model
 
-Contracts describe what a module requires and guarantees, including relevant
-errors, state changes and side effects. The Agent can change the implementation
-within those boundaries, using existing schemas, types and tests rather than
-creating a new document pack.
-
-For a boundary change, Accord guides the Agent to inspect consumers as well as
-dependencies. A local helper identifies candidates from the declared module
-graph; source inspection and tests establish the actual impact. Missing links
-remain gaps, not proof of compatibility. Unchanged decisions are reused, and
-documents change only when their facts change.
-
-[Boundary and impact procedure](payload/.agents/skills/accord/references/engineering-documents.md#module-boundaries-during-a-change)
-
-### The harness
-
-Accord's harness is a repository-local engineering layer on top of your coding
-agent. Prompt engineering shapes its instructions; context engineering selects
-the relevant project knowledge; task routing, output conventions and local
-validators support execution and feedback. The Agent performs the work;
-scripts check declared structure, references and integrity. Accord does not
-replace the agent's execution loop, permissions or sandbox.
+Short entry instructions route agents to the procedures, knowledge owners and
+methods needed for the current task. The agent performs reasoning and engineering
+operations; local tools check declared structure, references, content integrity
+and evidence states.
 
 ```text
 Target project
-├── AGENTS.md + .github/copilot-instructions.md   Merged Agent entry points
-├── .agents/skills/accord/                       Shared workflow and local tools
-├── .accord/                                    Configuration, Changes, Records, methods
-└── docs/                                       Project knowledge and coding practices
+├── AGENTS.md + .github/copilot-instructions.md   Agent entry points
+├── .agents/skills/accord/                       Shared protocol, procedures and tools
+├── .accord/                                    Configuration, governance, optional local work
+└── docs/                                       Knowledge registry, documents and coding practices
 ```
 
-Short entry instructions route both agents to the same workflow. Procedures,
-module details and method packets load when relevant; completed history is not
-default context. Git supplies version control, diffs and recovery—not another
-approval workflow. Accepting work does not force a commit or push.
+**Context management.** Select sources by requirement, module or document reference,
+then follow parent, dependency and document relationships. Contract changes also
+require inspection of consumers, shared data, configuration and dynamic registration.
+Completed work and unrelated history stay outside default context. Source inspection
+and tests establish relationships beyond the declared graph; unknowns remain explicit.
 
-For parallel work, Accord calls for explicit write scopes, a shared base and an
-integration order, using branches or worktrees where useful. GitHub permissions,
-required reviews and merge protection remain repository settings—not controls
-enforced by Accord. A PR approval does not automatically update Accord's decision records.
+**Modular design.** Module contracts describe preconditions, guarantees, error
+behavior, state transitions and side effects. Agents choose equivalent internal
+implementations; decisions affecting externally observable behavior follow the
+governance policy. Schemas, types and tests retain exact executable facts, while
+documents explain responsibilities, constraints and design rationale.
 
-This approach combines established requirements engineering and V&V with
-current work on human–agent collaboration and harness design. Related reading:
-[Agentic Software Engineering research roadmap](https://arxiv.org/abs/2509.06216),
-[Anthropic on context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents),
-and [OpenAI on harness engineering](https://openai.com/index/harness-engineering/).
-Accord is a practical synthesis, not a reference implementation of these works.
+[Context and impact analysis](payload/.agents/skills/accord/references/project-knowledge.md#route-and-inspect)
 
 ## Project documentation and knowledge
 
-Accord directs the Agent to build a common project reference from existing
-documents and selective code inspection, then maintain it as part of changes.
+Development documentation and operations knowledge share one registry, with one
+canonical maintenance location for each fact. Coverage includes systems, modules,
+submodules and important components, with detail proportional to engineering significance.
 
-| Project path | Purpose |
+### Organization and coverage
+
+| Source | Content |
 | --- | --- |
-| `docs/README.md`, `docs/manifest.yaml` | Navigation, module inventory, review state and gaps |
-| `docs/agent-context.md` | Compact starting context for coding sessions |
-| `docs/system-overview.md`, `docs/architecture.md` | System purpose, boundaries, components and flows |
-| `docs/interfaces-and-data.md` | Interface and data ownership overview |
-| `docs/modules/<module-id>.md` | Module functions, inputs/outputs, data/state rules and dependencies |
-| Registered details and `docs/contracts/<module-id>/` | Larger module details and applicable machine-readable contracts |
-| `docs/glossary.md` | Project terms and aliases |
+| Project knowledge registry | Stable document/module identities, paths, references, status, audiences and coverage gaps |
+| System documents | User needs, design inputs, architecture, system constraints, interface and data ownership |
+| Module/component documents | Responsibilities, contracts, states and errors, dependencies, source mapping, tests and operations |
+| Executable contracts and evidence | Schemas, types, tests and V&V results linked to actual versions |
+| Coding-context navigation | Optional frequently used commands, key paths and retrieval entry points |
 
-The target is usable engineering detail—not just an architecture summary:
-applicable fields, enums, defaults, errors and state transitions belong in the
-relevant module or contract. Requirements, design inputs, decisions and V&V
-keep their existing owners and are linked rather than copied.
+`.accord/documentation-policy.yaml` defines applicable topics by module kind,
+combined or separate document layouts, and optional file-count constraints.
+`docs/manifest.yaml` registers system documents and hierarchical module metadata.
+Existing documents can retain their paths; important classes can be registered
+as components, while ordinary internals can be covered through a file index.
 
-Changed facts replace outdated sections in place. Module and dependency
-observations help identify which documents need review; Git retains history.
-Freshness, coverage and source-free reconstruction are separate assessments.
+The objective is sufficient engineering information to reproduce the agreed
+architecture, modules, functionality and file organization. Content evolves with
+affected requirements and implementations; Git retains history. Freshness,
+semantic coverage and reconstruction validation are assessed separately.
 
-For handover or an external knowledge base, export an explicit source-free
-document set from the target project:
+### Operations retrieval and publication
+
+Export a source-free knowledge set from the target project:
 
 ```sh
 node .agents/skills/accord/scripts/accord-knowledge-export.mjs --project . --mode query --output ../project-knowledge
 ```
 
-The export includes selected documentation and an integrity receipt, not source
-files or the Agent's compact context cache. Review it before sharing. Documentation
-can support rebuilding equivalent behavior within an agreed scope; an export
-alone does not prove completeness or a successful rebuild.
+The export contains selected documents and an integrity receipt. For a downstream
+SharePoint, Copilot Studio or custom retrieval-agent pipeline, obtain a publication
+manifest:
 
-[Documentation contract](payload/.agents/skills/accord/references/engineering-documents.md) · [Query and export guidance](payload/.agents/skills/accord/references/knowledge-query-and-refresh.md)
+```sh
+node .agents/skills/accord/scripts/accord-project.mjs --project . --publish --audience operations
+```
 
-## Awesome Copilot methods
+The manifest includes stable IDs, content hashes, required references, review states
+and omissions. A `--previous` manifest for the same selection identifies removals.
+The downstream pipeline handles conversion, indexing, access control and deployment
+version binding. Accord does not publish directly to SharePoint.
 
-Accord adapts seven methods from
+[Documentation policy and format](payload/.agents/skills/accord/references/project-knowledge.md) · [Query and export](payload/.agents/skills/accord/references/knowledge-query-and-refresh.md)
+
+## Collaboration and governance
+
+Issues/PRs are the preferred work carriers; local work items support offline use.
+Requirements and design inputs remain durable engineering assets in their own
+sources. Work items record the current delta's objective, scope, decisions and
+evidence references. Active work indexes are queried on demand; discussion bodies
+from closed work are excluded from default context.
+
+`.accord/governance.yaml` supports two decision-authority models:
+
+| Mode | Authority model | Cross-module changes |
+| --- | --- | --- |
+| **Delegated governance** `delegated` | Project owners retain project-level authority; module members act within delegated scope | A project owner approves, or authorized members of each affected domain approve their respective scope |
+| **Federated governance** `federated` | Module domains hold independent authority; an explicit system domain governs shared constraints | Every affected domain approves separately; project owners have no implicit cross-domain override |
+
+In delegated mode, policy or ownership changes, shared system scope and explicit
+execution authorization require project-level authority. In federated mode, policy
+or ownership changes require every existing domain. Both use the preceding trusted
+policy. Parallel development requires explicit write scopes, a shared base,
+dependencies and integration responsibilities, using branches or worktrees as needed.
+Task baselines combine a Git commit with relevant input versions; unrelated commits
+do not automatically invalidate requirements decisions.
+
+The GitHub adapter reads target-branch policy and checks reviews bound to the PR
+head, target and approval scope. Current remote checks require a new approval marker
+after target movement. CI, branch protection and merge eligibility remain target
+repository controls.
+
+[Work items, baselines and governance](payload/.agents/skills/accord/references/team-work.md)
+
+## Methods and extensions
+
+Accord adapts seven task-specific methods from
 [GitHub Awesome Copilot](https://github.com/github/awesome-copilot/tree/7b1ebe6333397841ca918dec904d24d4695fe953).
-Reviewed sources are bundled at commit `7b1ebe633339` under MIT, so using the
-included methods does not depend on upstream availability.
+Reviewed sources are pinned at commit `7b1ebe633339`, bundled with their MIT license
+and copyright notices, and available offline. Execution tools required by a method
+are supplied by the project environment.
 
-Adaptations are maintained by Accord, with upstream copyright and MIT license
-notices preserved. Accord is an independent project and is not affiliated with
-or endorsed by GitHub.
-
-| Method | Use in Accord |
+| Method | Responsibility |
 | --- | --- |
-| `acquire-codebase-knowledge` | Repository discovery and documentation inventory |
-| `arch` | Architecture analysis with source references |
-| `context-engineering` | Bounded context and impact mapping for a Change |
-| `documentation-writer` | Reader-focused technical documentation |
-| `bug-reproduction-brief` | Repeatable defect evidence |
-| `refactor-plan` | Dependency-aware refactor planning |
-| `webapp-testing` | Browser scenarios using available, authorized tools |
+| `acquire-codebase-knowledge` | Repository discovery and knowledge-source inventory |
+| `arch` | Architecture analysis grounded in source evidence |
+| `context-engineering` | Task context and impact-scope analysis |
+| `documentation-writer` | Technical documentation organized around reader tasks |
+| `bug-reproduction-brief` | Minimal, repeatable failure evidence |
+| `refactor-plan` | Dependency sequencing, behavior preservation and recovery planning |
+| `webapp-testing` | Browser scenario verification using available, authorized tools |
 
-These are **adapted methods, not automatically installed upstream plugins**.
-Accord owns the output locations and permission rules. Routing or loading a
-method is not proof that it was applied; the Agent reports actual use.
-Testing reuses the project's language, platform and test tools.
+Method loading, application and verification have distinct states. New or replacement
+methods require review of scope, effectiveness evidence, dependencies and permissions.
+Project coding practices have their own maintained source, and existing user Skills
+remain available. Recurring engineering findings can become approved rules, checks
+or method improvements.
 
-Accord also borrows the inspect-before-asking pattern from `code-tour`.
-`project-documenter`, `drawio` and `md-to-docx` remain optional presentation
-capabilities, disabled by default. See the [catalog](payload/.accord/capabilities/catalog/index.yaml)
-and [upstream notices](vendor/awesome-copilot/7b1ebe633339/LICENSE).
+`code-tour` supplies an inspect-before-asking interaction reference;
+`project-documenter`, `drawio` and `md-to-docx` are optional presentation capabilities,
+disabled by default. Accord is independent and is not affiliated with or endorsed by GitHub.
 
-## Customize and improve
-
-Keep your conventions in `docs/engineering/coding-practices.md` or its configured
-replacement. On first setup, the Agent inspects existing rules and asks what to
-adopt. Independently installed Skills remain usable and unmanaged.
-
-You can ask the Agent to evaluate, add or replace a method. Activation requires
-review of its scope, evidence, dependencies and permissions. Recurring findings
-can become approved practices, checks or method changes; they do not
-automatically accumulate in the main instructions.
-
-[Method extensions](payload/.agents/skills/accord/references/project-methods.md) · [Project-local improvement](payload/.agents/skills/accord/references/project-improvement.md)
+[Capability catalog](payload/.accord/capabilities/catalog/index.yaml) · [Method extensions](payload/.agents/skills/accord/references/project-methods.md) · [Continuous improvement](payload/.agents/skills/accord/references/project-improvement.md) · [Upstream license](vendor/awesome-copilot/7b1ebe633339/LICENSE)
 
 ## Checks and boundaries
 
-From an adopted project, inspect the installed version:
+Inspect installation status from an adopted project:
 
 ```sh
 node .agents/skills/accord/scripts/accord-adoption.mjs --mode status --project .
 ```
 
-Normal work uses scoped installation, task or delivery checks. The Agent selects
-the relevant Change and modules and reports what was checked or omitted. Status
-alone is not installation verification; use the [update guide](CONFIGURE_WITH_AGENT.md)
-for complete file and provenance checks.
-
-For an explicit full audit, including historical records:
+Installation, task and delivery checks use their respective scopes and report both
+coverage and gaps. Run a full audit, including archived local work, when required:
 
 ```sh
 node .agents/skills/accord/scripts/accord-validate.mjs --project . --scope audit
 ```
 
-Accord is an instruction-based harness, not a runtime security boundary.
-Checks cannot prove that an Agent understood the user, that documents are
-complete, or that the result should be accepted. Human review remains necessary.
-Installation and Git writes require their applicable authorization; push is a
-separate action. There is no background service or autonomous self-update.
+Accord is an engineering harness implemented through instructions and tools. The
+host agent environment supplies execution permissions and sandboxing. Mechanical
+checks detect structural, reference, version or evidence-state problems; requirements
+understanding, semantic completeness and acceptance still require review. Accord
+uses local scripts and has no persistent service or autonomous update process.
 
 ## License
 

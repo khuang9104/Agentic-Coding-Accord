@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { loadProjectModel } from './accord-project.mjs';
 
 const HARD_EXCLUDES = new Set([
   '.git', '.accord', '.agents',
@@ -10,10 +11,6 @@ const HARD_EXCLUDES = new Set([
   '.next', '.nuxt', '.cache', '.turbo', '.venv', 'venv', '__pycache__'
 ]);
 const HARD_EXCLUDED_PATHS = ['.github/skills'];
-const MANAGED_DOCUMENTS = [
-  'README.md', 'manifest.yaml', 'agent-context.md', 'system-overview.md',
-  'architecture.md', 'interfaces-and-data.md', 'glossary.md', 'modules/README.md'
-];
 const DEFAULT_LIMITS = {
   max_depth: 6,
   max_tree_entries: 400,
@@ -98,23 +95,11 @@ function managedDocumentationPaths(projectRoot, config) {
     const relative = path.relative(fs.realpathSync(projectRoot), fs.realpathSync(manifestPath));
     if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) return new Set();
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    if (manifest.structure !== 'accord-project-knowledge' || manifest.knowledge_root !== 'docs' ||
-        !['1.2', '1.3', '1.4'].includes(manifest.schema_version) || !Array.isArray(manifest.modules)) return new Set();
-    const moduleIds = new Set(manifest.modules.filter(id => typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)));
-    const details = Array.isArray(manifest.engineering?.documents) ? manifest.engineering.documents : [];
-    const contracts = Array.isArray(manifest.engineering?.contracts) ? manifest.engineering.contracts : [];
-    const registered = ['1.3', '1.4'].includes(manifest.schema_version) ? [
-      ...details.filter(item => item && moduleIds.has(item.module) && ['interfaces', 'data-model', 'behavior'].includes(item.kind) &&
-        item.path === 'docs/modules/' + item.module + '/' + item.kind + '.md').map(item => item.path),
-      ...contracts.filter(item => item && moduleIds.has(item.module) && typeof item.artifact === 'string' &&
-        item.artifact.startsWith('docs/contracts/' + item.module + '/') && item.artifact.endsWith('.json') &&
-        path.posix.normalize(item.artifact) === item.artifact && !/[\\:\x00-\x1f]/.test(item.artifact)).map(item => item.artifact)
-    ] : [];
-    return new Set([
-      ...MANAGED_DOCUMENTS.map((file) => 'docs/' + file),
-      ...[...moduleIds].map(id => 'docs/modules/' + id + '.md'),
-      ...registered
-    ]);
+    if (manifest.schema_version === '2.0') {
+      const model = loadProjectModel(projectRoot, config, manifest);
+      return new Set([...model.metadata_paths, ...model.documents.map(d => d.path)]);
+    }
+    return new Set();
   } catch {
     return new Set();
   }

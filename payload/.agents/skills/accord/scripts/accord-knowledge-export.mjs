@@ -7,8 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { KNOWLEDGE_DOCUMENTS as STANDARD_DOCUMENTS, KNOWLEDGE_SCHEMAS } from './accord-protocol.mjs';
-import { selectModuleScope } from './accord-scope.mjs';
+import { loadProjectModel, createPublicationManifest } from './accord-project.mjs';
 
 const BLOCKED_TOP_LEVEL = new Set([
   '.git', '.accord', '.agents', 'vendor', 'node_modules',
@@ -24,7 +23,7 @@ const TEXT_EXTENSIONS = new Set([
 ]);
 const BLOCKED_FILENAMES = new Set(['Dockerfile', 'Makefile', 'CMakeLists.txt'].map(value => value.toLowerCase()));
 const SENSITIVE_BASENAME = /^(?:\.env(?:\..*)?|credentials(?:\..*)?|id_(?:rsa|dsa|ecdsa|ed25519))$/iu;
-const MODES = new Set(['query', 'reconstruction']);
+const MODES = new Set(['query']);
 
 function normalizeRelative(relative) {
   if (typeof relative !== 'string' || !relative.trim()) {
@@ -102,103 +101,24 @@ export function sensitiveContentViolation(relative, contents) {
     : null;
 }
 
-function documentPath(value) {
-  const normalized = normalizeRelative(value);
-  return normalized.startsWith('docs/') ? normalized : 'docs/' + normalized;
-}
-
-function registeredEngineeringPaths(manifest) {
-  const engineering = manifest?.engineering;
-  if (!engineering || typeof engineering !== 'object') return [];
-  const details = Array.isArray(engineering.documents) ? engineering.documents : [];
-  const contracts = Array.isArray(engineering.contracts) ? engineering.contracts : [];
-  return [
-    ...details.map(item => item?.path),
-    ...contracts.map(item => item?.artifact)
-  ].filter(value => typeof value === 'string' && value.trim());
-}
-
-function sourceOwners(config) {
-  const sources = config?.sources || {};
-  const owners = [];
-  if (typeof sources.coding_practices === 'string' && sources.coding_practices.trim()) {
-    owners.push({ path: sources.coding_practices, role: 'coding-practices' });
-  }
-  if (Array.isArray(sources.engineering)) {
-    for (const source of sources.engineering) {
-      if (typeof source?.path === 'string' && source.path.trim()) {
-        owners.push({ path: source.path, role: 'engineering-source', id: source.id || null });
-      }
-    }
-  }
-  return owners;
-}
-
-/**
- * Select files for a delivery without reading or copying their contents.
- * Query mode contains the derived knowledge view and registered exact details.
- * Reconstruction mode additionally considers registered, text-only engineering
- * inputs and coding practices; source files are reported as omitted.
- */
-export function selectKnowledgeFiles({ manifest, config = {}, mode = 'query', modules = null }) {
+export function selectKnowledgeFiles({ manifest, config = {}, mode = 'query', modules = null, projectRoot = null }) {
   if (!MODES.has(mode)) throw new Error('Unknown delivery mode: ' + mode);
-  if (!manifest || manifest.structure !== 'accord-project-knowledge' ||
-      !KNOWLEDGE_SCHEMAS.has(manifest.schema_version) || manifest.knowledge_root !== 'docs') {
-    throw new Error('A valid Accord project knowledge manifest is required.');
-  }
-  if (!Array.isArray(manifest.documents) || !Array.isArray(manifest.modules)) {
-    throw new Error('Knowledge manifest documents and modules must be arrays.');
-  }
-  if (JSON.stringify(manifest.documents) !== JSON.stringify(STANDARD_DOCUMENTS)) {
-    throw new Error('Knowledge manifest documents must use the fixed Accord document spine.');
-  }
-  const scope = modules?.length ? selectModuleScope(manifest, modules) : null;
-  const allManifest = manifest;
-  if (scope) {
-    manifest = { ...manifest, modules: scope, engineering: { ...manifest.engineering,
-      documents: manifest.engineering?.documents?.filter(e => scope.includes(e.module)),
-      contracts: manifest.engineering?.contracts?.filter(e => scope.includes(e.module)) } };
-    config = { ...config, sources: { ...config.sources, engineering: config.sources?.engineering?.filter(e => !e.modules?.length || e.modules.some(id => scope.includes(id))) } };
-  }
-  const selected = [];
-  const selectedPaths = new Set();
-  const omitted = [];
-  if (scope) for (const id of allManifest.modules.filter(id => !scope.includes(id))) omitted.push({ path: 'docs/modules/' + id + '.md', role: 'module-document', reason: 'Outside selected dependency closure.' });
-  const add = (rawPath, role, required = true) => {
-    let normalized;
-    try { normalized = normalizeRelative(rawPath); }
-    catch (error) {
-      if (required) throw error;
-      omitted.push({ path: String(rawPath), role, reason: error.message });
-      return;
+  if (manifest?.schema_version === '2.0') {
+    if (!projectRoot) throw new Error('Knowledge 2.0 selection requires the project root to resolve module owners.');
+    const publication = createPublicationManifest(loadProjectModel(projectRoot, config, manifest), { modules });
+    const selected = [], omitted = [...publication.omitted];
+    for (const document of publication.documents) {
+      if (document.audience.length === 1 && document.audience[0] === 'agent') { omitted.push({ path: document.path, reason: 'Agent-only navigation cache.' }); continue; }
+      const violation = sourceFreePathViolation(document.path);
+      if (violation) throw new Error('Registered published owner is not source-free: ' + violation);
+      selected.push({ path: document.path, role: 'canonical-document' });
     }
-    const violation = sourceFreePathViolation(normalized);
-    if (violation) {
-      if (required) throw new Error('Required delivery path is not source-free: ' + violation);
-      omitted.push({ path: normalized, role, reason: violation });
-      return;
-    }
-    if (!selectedPaths.has(normalized)) {
-      selectedPaths.add(normalized);
-      selected.push({ path: normalized, role });
-    }
-  };
-
-  add('docs/manifest.yaml', 'knowledge-metadata');
-  for (const document of manifest.documents.filter(file => file !== 'agent-context.md')) add(documentPath(document), 'knowledge-document');
-  for (const moduleId of manifest.modules) {
-    if (typeof moduleId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(moduleId)) {
-      throw new Error('Invalid module ID in knowledge manifest: ' + String(moduleId));
-    }
-    add('docs/modules/' + moduleId + '.md', 'module-document');
+    const selectedIds = new Set(publication.documents.filter(d => selected.some(s => s.path === d.path)).map(d => d.id));
+    publication.documents = publication.documents.filter(d => selectedIds.has(d.id)).map(d => ({ ...d, unresolved_context: d.refs.filter(id => !selectedIds.has(id)) }));
+    publication.omitted = omitted;
+    return { mode, scope: publication.selected_modules, selected, omitted, publication };
   }
-  for (const registered of registeredEngineeringPaths(manifest)) {
-    add(registered, 'engineering-detail');
-  }
-  if (mode === 'reconstruction') {
-    for (const owner of sourceOwners(config)) add(owner.path, owner.role, false);
-  }
-  return { mode, scope, selected, omitted };
+  throw new Error('Migrate knowledge to 2.0 before export.');
 }
 
 function hashFile(file) {
@@ -270,7 +190,7 @@ export function exportKnowledgeDelivery({ projectRoot: projectInput, outputRoot:
     throw new Error('Delivery output must be outside the source project.');
   }
   if (fs.existsSync(outputRoot)) throw new Error('Delivery output already exists; choose a new directory.');
-  const selection = selectKnowledgeFiles({ manifest, config, mode, modules });
+  const selection = selectKnowledgeFiles({ manifest, config, mode, modules, projectRoot });
   const files = [];
   const payloads = [];
   const unresolvedReferences = [];
@@ -312,6 +232,7 @@ export function exportKnowledgeDelivery({ projectRoot: projectInput, outputRoot:
       manifest_status: manifest.status || 'unknown'
     },
     files,
+    ...(selection.publication ? { publication: selection.publication } : {}),
     omitted: selection.omitted,
     unresolved_references: unresolvedReferences,
     limitations: [
@@ -408,7 +329,7 @@ function parseArgs(argv) {
     }
     return values;
   }
-  if (!values.mode || !MODES.has(values.mode)) return { error: '--mode must be query or reconstruction.' };
+  if (!values.mode || !MODES.has(values.mode)) return { error: '--mode must be query.' };
   if (!values.output) return { error: '--output is required.' };
   return values;
 }
@@ -416,7 +337,7 @@ function parseArgs(argv) {
 function main() {
   const parsed = parseArgs(process.argv.slice(2));
   if (parsed.help) {
-    console.log('Usage: node accord-knowledge-export.mjs --project <path> --mode <query|reconstruction> --output <directory> [--modules <id,id>] [--dry-run]');
+    console.log('Usage: node accord-knowledge-export.mjs --project <path> --mode <query> --output <directory> [--modules <id,id>] [--dry-run]');
     console.log('  Create a bounded source-free knowledge delivery set outside the project.');
     console.log('Usage: node accord-knowledge-export.mjs --verify <delivery-directory>');
     console.log('  Verify the delivery receipt, hashes, file set and source-free paths.');

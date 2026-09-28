@@ -1,9 +1,9 @@
 # Engineering baseline
 
 Use this Compact owner only when no suitable project source exists. Register
-its path in `sources.engineering`; migrate discovered material only with human
+its path in the knowledge registry; migrate discovered material only with human
 agreement. Remove template guidance after recording actual facts. Do not create
-an empty copy for every module or Change.
+an empty copy for every module or work item.
 
 ## User needs and intended use
 

@@ -1,7 +1,7 @@
 # Testing and V&V
 
 Use for test planning, execution and evidence review, standalone or within the
-existing Change lifecycle. Tests serve approved requirements, Design Inputs
+selected work lifecycle. Tests serve approved requirements, Design Inputs
 and intended use; observed code or UI behavior is not the expected-result
 authority. Reconcile changed inputs before updating assertions.
 
@@ -98,7 +98,7 @@ behavior. A screenshot, navigation or successful tool call alone is not a pass.
 ## Report evidence without another document system
 
 For documentation sufficiency, use the independent inventory and exact checks
-from `engineering-documents.md`. Fix expected field, enum, default, state and
+from `project-knowledge.md`. Fix expected field, enum, default, state and
 error outcomes before generating or grading documents. Include omission and
 conflict cases; a generated table or matching heading is not correctness.
 Read-only exact comparison does not prove runtime or user-need conformance.
@@ -112,7 +112,7 @@ do not change the denominator or expected outcomes to fit the generated prose.
 Link scoped question/rebuild results from the manifest, leaving the actual V&V
 evidence in its existing owner. Do not delete source to test reconstruction.
 
-Use the response for standalone read-only work and existing Change/V&V owners
+Use the response for standalone read-only work and the selected work/V&V owners
 for material work. Link logs and tests; do not copy them into project knowledge.
 For each material result retain input/scenario IDs, command or tool actions,
 observed revision plus dirty-worktree boundary, runtime/OS/browser or device,
@@ -125,6 +125,6 @@ and result review. Report the method's pinned source when applied, or a reasoned
 skip/unavailability. Automated tests contribute V&V evidence; they cannot grant
 human acceptance or prove all user needs are satisfied.
 
-Legacy route schemas require a reviewed upgrade for integrated browser use.
+Retired route schemas must be migrated before integrated browser use.
 Ordinary authorized tests remain usable without that route or a snapshot;
 report the limitation without claiming the unavailable method was applied.

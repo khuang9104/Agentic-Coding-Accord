@@ -1,43 +1,114 @@
 {
-  "schema_version": "1.4",
+  "schema_version": "2.0",
   "structure": "accord-project-knowledge",
-  "status": "draft",
   "knowledge_root": "docs",
-  "source_content_included": false,
-  "observed_revision": null,
-  "observed_worktree": "unknown",
-  "observed_at": null,
-  "last_reviewed_at": null,
-  "module_inventory_basis": "Initial repository discovery is pending.",
-  "known_gaps": [],
+  "status": "draft",
+  "module_files": [],
   "documents": [
-    "README.md",
-    "agent-context.md",
-    "system-overview.md",
-    "architecture.md",
-    "interfaces-and-data.md",
-    "glossary.md",
-    "modules/README.md"
-  ],
-  "modules": [],
-  "scopes": [],
-  "engineering": {
-    "schema_version": "1.1",
-    "documents": [],
-    "contracts": [],
-    "coverage": {
-      "status": "not-assessed",
-      "reviewed_modules": [],
-      "inventory_complete": false,
-      "scope": [],
-      "inventory": [],
-      "gaps": []
+    {
+      "id": "DOC-INDEX",
+      "path": "docs/README.md",
+      "topics": [
+        "navigation"
+      ],
+      "refs": [],
+      "requirements": [],
+      "audience": [
+        "development",
+        "operations"
+      ],
+      "status": "draft",
+      "sensitivity": "internal"
     },
-    "reconstruction": {
-      "status": "not-run",
-      "current_run": null,
-      "scope": [],
-      "evidence": []
+    {
+      "id": "DOC-CONTEXT",
+      "path": "docs/agent-context.md",
+      "topics": [
+        "navigation"
+      ],
+      "refs": [],
+      "requirements": [],
+      "audience": [
+        "agent"
+      ],
+      "status": "draft",
+      "sensitivity": "internal"
+    },
+    {
+      "id": "DOC-SYSTEM",
+      "path": "docs/system-overview.md",
+      "topics": [
+        "needs"
+      ],
+      "refs": [],
+      "requirements": [],
+      "audience": [
+        "development",
+        "operations"
+      ],
+      "status": "draft",
+      "sensitivity": "internal"
+    },
+    {
+      "id": "DOC-ARCH",
+      "path": "docs/architecture.md",
+      "topics": [
+        "architecture",
+        "system-constraints"
+      ],
+      "refs": [],
+      "requirements": [],
+      "audience": [
+        "development",
+        "operations"
+      ],
+      "status": "draft",
+      "sensitivity": "internal"
+    },
+    {
+      "id": "DOC-CONTRACTS",
+      "path": "docs/interfaces-and-data.md",
+      "topics": [
+        "contracts"
+      ],
+      "refs": [],
+      "requirements": [],
+      "audience": [
+        "development",
+        "operations"
+      ],
+      "status": "draft",
+      "sensitivity": "internal"
+    },
+    {
+      "id": "DOC-GLOSSARY",
+      "path": "docs/glossary.md",
+      "topics": [
+        "glossary"
+      ],
+      "refs": [],
+      "requirements": [],
+      "audience": [
+        "development",
+        "operations"
+      ],
+      "status": "draft",
+      "sensitivity": "internal"
+    },
+    {
+      "id": "DOC-MODULES",
+      "path": "docs/modules/README.md",
+      "topics": [
+        "navigation"
+      ],
+      "refs": [],
+      "requirements": [],
+      "audience": [
+        "development",
+        "operations"
+      ],
+      "status": "draft",
+      "sensitivity": "internal"
     }
-  }
+  ]
 }
