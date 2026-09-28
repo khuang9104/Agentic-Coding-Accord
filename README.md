@@ -110,6 +110,14 @@ Requirement changes reopen affected decisions; existing documentation, code and
 tests form a revisable baseline. Acceptance, commit, merge and deployment are
 separate events.
 
+Testing follows three checkpoints: define observable criteria, check each
+meaningful increment, then review scoped evidence for acceptance. Portable test
+assets share a configurable `tests/` root. Impact-based selection and valid
+evidence reuse reduce repeated work; one result can support both Verification
+and Validation. Missing or stale required evidence remains a delivery gap.
+
+[V&V workflow and evidence contract](payload/.agents/skills/accord/references/vv-contract.md)
+
 ## Agent execution model
 
 Short entry instructions route agents to the procedures, knowledge owners and

@@ -1,6 +1,6 @@
 // Exact runtime contracts. Product policy belongs in docs/product.md, not here.
-export const CONFIG_SCHEMA = '0.9';
-export const PROTOCOL_VERSION = '0.10.0';
+export const CONFIG_SCHEMA = '0.10';
+export const PROTOCOL_VERSION = '0.11.0';
 export const RISK_LEVELS = new Set(['L0', 'L1', 'L2', 'L3', 'L4']);
 export const MATERIAL_RISKS = new Set(['L2', 'L3', 'L4']);
 export const VALIDATION_SCOPES = new Set(['installation', 'task', 'delivery', 'audit']);

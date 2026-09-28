@@ -47,12 +47,40 @@ prove provider/consumer runtime compatibility.
 
 ## Design and execution boundaries
 
+Use three checkpoints, within the existing work lifecycle:
+
+1. Start: observable acceptance criteria, preserved behavior, scope and evidence
+   obligations. Reuse settled decisions; ask only unresolved consequential choices.
+2. Increment: run focused checks after each meaningful behavior slice. Diagnose
+   failures and return only to affected steps; no per-slice document or approval.
+3. Delivery: review the final diff, selected checks, valid evidence and gaps.
+   Report ready-for-acceptance only when required obligations are satisfied.
+
+Project Definition of Done covers criteria, necessary checks, diff review,
+changed knowledge and inspectable version/environment/limitations. Per-work
+business criteria remain in their requirement owners. Borrow incremental
+feedback without mandatory Scrum ceremonies or simulated agent roles.
+
+Keep test assets under configured `vv.test_root` (default `tests/`), organized by
+module and shared scenarios, fixtures and tools. Create folders only when used.
+Framework-required source tests need exact justified layout exceptions. Native
+CI/package entries invoke these assets. Read `vv-contract.md` only when changing
+registration, collecting receipts or interpreting machine delivery checks.
+
+One scenario may establish both V purposes; link its result once. Account for
+each obligation with new execution, valid reused evidence, justified no-new
+obligation, or an explicit unmet gap. Unchanged user needs do not exempt affected
+scenarios from regression. Review is a method of evidence, not a third V purpose.
+Do not create tests for every method when existing component/contract tests
+adequately cover the relevant behavior. Public contracts and consequential
+state/error paths need explicit assertions.
+
 - Map each material check to approved input IDs or intended-use scenarios,
   observable expected results and the environment in which they matter.
   Verification checks Design Inputs; Validation checks intended use in
   representative integrated conditions. Identify what mocks cannot demonstrate.
 - Preserve existing tests where they still reflect approved behavior. Add or
-  edit tests only within requested scope, using existing paths and naming.
+  edit tests only within requested scope, using the configured test root and naming.
   Planning-only work does not execute; test-only work does not repair application
   code. Read-only requests do not create test files or persistent reports.
 - Inspect commands for install hooks, migrations, production targets, credentials
@@ -91,7 +119,7 @@ Capture failure traces/screenshots only within scope, redact sensitive data,
 and close only resources created by the test.
 
 When authorized to create reusable regression tests, use the project's existing
-test language, framework, directories and artifact locations. Exploration is
+test language/framework and configured test-root layout. Exploration is
 evidence for implementation details, not a substitute for approved expected
 behavior. A screenshot, navigation or successful tool call alone is not a pass.
 

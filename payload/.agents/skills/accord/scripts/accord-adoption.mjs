@@ -150,7 +150,7 @@ export function verifyReleasePackage(rootInput, { migrationSource = false } = {}
   const knowledge = parse(bytes(root, 'payload/docs/manifest.yaml').toString('utf8'));
   const registry = parse(bytes(root, 'payload/.accord/capabilities/registry.yaml').toString('utf8'));
   const empty = value => Array.isArray(value) && value.length === 0;
-  if (!migrationSource && (knowledge.schema_version !== '2.0' || config.schema_version !== '0.9' || config.sources?.engineering !== undefined)) throw new Error('Incoming package must use current schemas; retired formats are import-only.');
+  if (!migrationSource && (knowledge.schema_version !== '2.0' || config.schema_version !== '0.10' || config.sources?.engineering !== undefined)) throw new Error('Incoming package must use current schemas; retired formats are import-only.');
   const engineering = migrationSource ? knowledge.engineering : null;
   const pristineKnowledge = knowledge.schema_version === '2.0'
     ? empty(knowledge.module_files) && Array.isArray(knowledge.documents) && knowledge.documents.every(d => d.status === 'draft' && d.review === undefined)

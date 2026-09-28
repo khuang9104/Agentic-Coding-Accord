@@ -17,7 +17,7 @@ goals and settled decisions unless the user replaces their scope. Before materia
 work identify outcome/preserve boundaries, inspect Git, read `.accord/accord.yaml`
 and configured coding practices, then the closest canonical owners.
 
-Configuration 0.9 uses an Issue/PR or lightweight local work item. Do not create
+Configuration 0.10 uses an Issue/PR or lightweight local work item. Do not create
 duplicate process files. Retired formats must be migrated before current work.
 Reuse decisions by scope/premises, context by relevant source versions, and tests
 by implementation/assertions/environment. Unrelated commits or new messages reset
@@ -33,7 +33,7 @@ because a task eventually includes it.
 | Git bootstrap, checkpoint, commit, isolation or recovery | `references/git-control.md` |
 | New/changed material need or Design Inputs | `references/needs-and-design-input.md` |
 | Undecided risk, compatibility or authority boundary | `references/risk-and-authority.md` |
-| Work carrier, baseline or team/PR authority (configuration 0.9) | `references/team-work.md` |
+| Work carrier, baseline or team/PR authority (configuration 0.10) | `references/team-work.md` |
 | Knowledge 2.0 navigation, hierarchy, coverage or publication | `references/project-knowledge.md` |
 | Initial/broad discovery or insufficient change context | `references/knowledge-acquisition.md` |
 | Direct project query or targeted refresh | `references/knowledge-query-and-refresh.md` |
