@@ -20,9 +20,9 @@ packet completely, once per task.
   cleanup according to actual dependencies. Do not impose all phases when
   they do not apply. Include checks between risky phases and a proportional
   recovery approach using existing Git controls.
-- Put the plan in the current Change's implementation/task sections and reuse
+- Put the plan in the current work's implementation/task sections and reuse
   its context, approvals and evidence. Planning-only work can deliver the plan
-  in the response; no separate plan document or Change is required just to plan.
+  in the response; no separate plan document or work item is required just to plan.
 - A planning-only request ends with the plan. If implementation is already
   authorized and applicable Design Inputs are approved, proceed without the
   upstream additional confirmation pause. Ask only for unresolved material

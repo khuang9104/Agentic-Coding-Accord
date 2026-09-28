@@ -23,7 +23,7 @@ drift, not publisher identity.
 Keep the trusted source checkout available until the update is accepted.
 
 Inspect target Git state, entries, configuration, installation record, active
-Change and affected file owners. Existing partial files require reconciliation.
+work carrier and affected file owners. Existing partial files require reconciliation.
 A same-project clone retains its identity, knowledge, practices and approvals;
 only machine prerequisites need rechecking. Missing tools or an unknown source
 revision remain explicit limits, not invented provenance.
@@ -46,7 +46,7 @@ that reuse the same release number.
 | Accord runtime and reviewed capability catalog/bundle | Compare old/local/new; preserve local changes or report a focused conflict. |
 | Project configuration and routes | Three-way JSON merge when old content exists; arrays are atomic. Preserve identity, policy, source routes and custom triggers. |
 | AGENTS and Copilot instructions | Change only one marked Accord block; preserve all surrounding text and local line endings. |
-| Project documents, practices, capability registry, Changes and Records | Preserve existing content. Add missing owners or perform only a separately reviewed content/schema migration. |
+| Project documents, practices and capability registry | Preserve current facts and customizations; migrate retired formats, then remove superseded files. |
 | User Skills and business files | Outside the framework update; never reset, adopt, remove or upgrade them implicitly. |
 
 `create`, `update`, `merge-entry` and `merge-json` are proposed actions, not
@@ -85,10 +85,10 @@ New configuration sets `accord.installation_record` to
 After the merge, `--mode record --revision <observed-full-commit> --worktree
 <clean|dirty|unknown>` prints a record for review and authorized saving at that
 path. These values describe the source checkout, not the target's commit.
-Old projects without a record remain readable with a warning; establish a
-reviewed record on update, not a guessed historical one.
+Projects without a current receipt must establish the observed installation
+record during update; never guess a historical record.
 
-Record schema 1.1 owns the fields below. Legacy 1.0 records remain readable;
+Installation receipt schema 1.1 owns the fields below;
 unknown historical release versions stay unknown. Old packages lacking release
 metadata are permitted only as `--previous-package` merge baselines, not new
 installation sources.
@@ -133,9 +133,24 @@ authenticity nor user acceptance or documentation quality. Report files
 configured, mechanical checks and knowledge review separately; missing Git,
 Node, source evidence or user decisions cannot be reported as completion.
 
-Knowledge 1.2/1.3 remains readable after a 0.9 runtime update. For scoped 1.4
-adoption use the preserving migration in `engineering-documents.md`; do not
-copy the blank manifest over a project. New Changes/Records use 0.9; archive
-history stays 0.8. Configuration shape and entry markers remain 0.8, routes
-1.3 and registry 1.1. Release/protocol become 0.9.0. These version dimensions
-must not be changed together by blind text replacement.
+New adoption uses configuration 0.9, knowledge 2.0 and release/protocol 0.10.0.
+Entry markers remain 0.8, routes 1.3 and registry 1.1. Configure documentation
+and governance policies; use `project-knowledge.md` and `team-work.md`.
+Retired formats do not run side by side. During an authorized update:
+
+1. Use `accord-migrate.mjs --project <target>` to inspect the one-way knowledge
+   conversion; resolve collisions, retain IDs and review topic/source mapping.
+2. Move durable needs, design and evidence from old carriers to their canonical
+   owners. Continue active work as an Issue/PR or schema 1.0 local work item;
+   preserve actual decision/revision links without fabricating new approval.
+3. Remove retired `sources.engineering`, `changes` and `records` config fields,
+   old Change/Record working-tree files, obsolete runtime/templates and superseded
+   indexes after their necessary facts have current owners. Git keeps history.
+4. Merge current config, policies, registry, runtime and route/registry versions;
+   produce a current installation receipt from the observed files. Validate the
+   result using the selected incoming runtime. Do not keep an old reader active.
+
+An update request already covers this migration where facts and authority are
+unambiguous. Ask only for unresolved material conflicts, not permission to apply
+an already authorized migration. The helper reads old metadata solely to convert
+it; it never turns old observations into current semantic approval.

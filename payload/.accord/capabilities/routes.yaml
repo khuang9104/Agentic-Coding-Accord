@@ -24,23 +24,14 @@
         "acquire-codebase-knowledge",
         "arch"
       ],
-      "output_root": "docs",
-      "durable_outputs": [
-        "docs/README.md",
-        "docs/manifest.yaml",
-        "docs/agent-context.md",
-        "docs/system-overview.md",
-        "docs/architecture.md",
-        "docs/interfaces-and-data.md",
-        "docs/glossary.md",
-        "docs/modules/"
-      ],
+      "output_root": null,
+      "durable_outputs": [],
       "temporary_outputs": [],
       "approval": "pre-approved-integrated"
     },
     {
       "id": "change-context",
-      "purpose": "Map the files, dependencies, tests, and reference patterns for the active Change.",
+      "purpose": "Map the files, dependencies, tests, and reference patterns for the selected work carrier.",
       "triggers": [
         "before implementing",
         "plan this change",
@@ -52,16 +43,14 @@
       "methods": [
         "context-engineering"
       ],
-      "output_root": ".accord/changes/",
+      "output_root": null,
       "durable_outputs": [],
-      "temporary_outputs": [
-        ".accord/changes/<change-id>.md"
-      ],
+      "temporary_outputs": [],
       "approval": "pre-approved-integrated"
     },
     {
       "id": "knowledge-refresh",
-      "purpose": "Refresh only affected project documentation before Change acceptance or when the user requests a refresh.",
+      "purpose": "Refresh only affected project documentation before work acceptance or when the user requests a refresh.",
       "triggers": [
         "refresh project documentation",
         "update project documentation",
@@ -74,17 +63,8 @@
         "context-engineering",
         "arch"
       ],
-      "output_root": "docs",
-      "durable_outputs": [
-        "docs/README.md",
-        "docs/manifest.yaml",
-        "docs/agent-context.md",
-        "docs/system-overview.md",
-        "docs/architecture.md",
-        "docs/interfaces-and-data.md",
-        "docs/glossary.md",
-        "docs/modules/"
-      ],
+      "output_root": null,
+      "durable_outputs": [],
       "temporary_outputs": [],
       "approval": "pre-approved-integrated"
     },
@@ -108,8 +88,19 @@
     {
       "id": "documentation-writing",
       "purpose": "Write or improve the requested documentation in its existing location; discover additional project facts only when needed.",
-      "triggers": ["improve the readme", "write a how-to guide", "rewrite this documentation", "documentation-writer", "优化readme", "优化一下readme", "编写使用指南", "改善文档可读性"],
-      "methods": ["documentation-writer"],
+      "triggers": [
+        "improve the readme",
+        "write a how-to guide",
+        "rewrite this documentation",
+        "documentation-writer",
+        "优化readme",
+        "优化一下readme",
+        "编写使用指南",
+        "改善文档可读性"
+      ],
+      "methods": [
+        "documentation-writer"
+      ],
       "output_root": null,
       "durable_outputs": [],
       "temporary_outputs": [],
@@ -118,8 +109,18 @@
     {
       "id": "bug-reproduction",
       "purpose": "Establish minimal defect evidence, then stop, diagnose or continue authorized repair according to the user's task.",
-      "triggers": ["reproduce this bug", "fix this bug", "bug-reproduction-brief", "复现这个问题", "修复这个bug", "修复这个 bug", "排查这个故障"],
-      "methods": ["bug-reproduction-brief"],
+      "triggers": [
+        "reproduce this bug",
+        "fix this bug",
+        "bug-reproduction-brief",
+        "复现这个问题",
+        "修复这个bug",
+        "修复这个 bug",
+        "排查这个故障"
+      ],
+      "methods": [
+        "bug-reproduction-brief"
+      ],
       "output_root": null,
       "durable_outputs": [],
       "temporary_outputs": [],
@@ -127,9 +128,19 @@
     },
     {
       "id": "refactor-planning",
-      "purpose": "Sequence a multi-file refactor using the current Context Map and existing Change or response; continue already approved implementation.",
-      "triggers": ["plan this refactor", "refactor these modules", "refactor-plan", "规划这次重构", "重构这几个模块", "多模块重构"],
-      "methods": ["context-engineering", "refactor-plan"],
+      "purpose": "Sequence a multi-file refactor using the current Context Map and selected work carrier or response; continue already approved implementation.",
+      "triggers": [
+        "plan this refactor",
+        "refactor these modules",
+        "refactor-plan",
+        "规划这次重构",
+        "重构这几个模块",
+        "多模块重构"
+      ],
+      "methods": [
+        "context-engineering",
+        "refactor-plan"
+      ],
       "output_root": null,
       "durable_outputs": [],
       "temporary_outputs": [],
@@ -138,7 +149,15 @@
     {
       "id": "test-verification",
       "purpose": "Map approved inputs and intended-use scenarios to the existing project test stack and revision-bound V&V evidence.",
-      "triggers": ["run the tests", "verify this change", "test this project", "运行测试", "测试这个项目", "验证这次变更", "V&V"],
+      "triggers": [
+        "run the tests",
+        "verify this change",
+        "test this project",
+        "运行测试",
+        "测试这个项目",
+        "验证这次变更",
+        "V&V"
+      ],
       "methods": [],
       "output_root": null,
       "durable_outputs": [],
@@ -148,8 +167,17 @@
     {
       "id": "web-testing",
       "purpose": "Test approved browser-visible scenarios using available project tools; loading the method grants no installation or target access.",
-      "triggers": ["test this web app", "browser regression", "webapp-testing", "测试网页", "浏览器回归", "测试用户流程"],
-      "methods": ["webapp-testing"],
+      "triggers": [
+        "test this web app",
+        "browser regression",
+        "webapp-testing",
+        "测试网页",
+        "浏览器回归",
+        "测试用户流程"
+      ],
+      "methods": [
+        "webapp-testing"
+      ],
       "output_root": null,
       "durable_outputs": [],
       "temporary_outputs": [],

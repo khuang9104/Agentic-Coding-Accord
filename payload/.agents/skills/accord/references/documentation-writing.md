@@ -35,8 +35,9 @@ available only when auditing with `--view audit`, not needed for ordinary writin
   command or modify project behavior.
 
 Report the applied method, revision, target documents and relevant checks.
-Material work uses existing Capability Use/Record fields; a small edit does
-not require a new Change solely because this method was used.
+Material work records meaningful method evidence in the selected work carrier
+with actual method states. A small edit does not require a new
+work item solely because this method was used.
 
 If the route is absent in a legacy configuration, report that a reviewed route
 upgrade is needed; continue authorized writing with ordinary tools. If the

@@ -6,8 +6,8 @@
   "upstream_path": "plugins/context-engineering",
   "tree_sha": "e957193b30a9dedc4244dbb77812d8b884792bf2",
   "assessment": "integrated-adapter",
-  "fit": "Adds a task-specific map of primary files, dependencies, tests, and reference patterns before a multi-file Change.",
-  "constraint": "Accord incorporates a bounded context and impact map into the active Change. Do not claim complete-file discovery or create a competing plan and approval pause.",
+  "fit": "Adds a task-specific map of primary files, dependencies, tests, and reference patterns before a multi-file work item.",
+  "constraint": "Accord incorporates a bounded context and impact map into the selected work carrier. Do not claim complete-file discovery or create a competing plan and approval pause.",
   "source_components": [
     {
       "path": "plugins/context-engineering",

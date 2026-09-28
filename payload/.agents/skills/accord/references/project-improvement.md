@@ -10,7 +10,7 @@ model weights or letting the framework approve its own rules.
 ## Distinguish a finding from a rule
 
 Start from the actual failure or user correction and its evidence. Check the
-smallest relevant issue, Change, decision, practice and test owners. Determine
+smallest relevant issue, work item, decision, practice and test owners. Determine
 whether the cause is product behavior, environment, tool/method, workflow or
 practice; preserve uncertainty. A transient environment failure is not evidence
 that every future task needs a new coding rule.
@@ -18,7 +18,7 @@ that every future task needs a new coding rule.
 Keep an immediately resolved local issue in its existing task evidence. For a
 candidate worth retaining across tasks, reuse a registered engineering issue
 owner. If none fits, create `docs/engineering/improvements.md` only when there
-is actual durable content and register it in `sources.engineering` as `issues`,
+is actual durable content and register it in knowledge 2.0 as `issues`,
 and `decisions` when it also owns the human conclusions. Do not seed an empty
 file, add a second issue system or load the candidate collection by default.
 
@@ -63,7 +63,7 @@ instructions, even when they contain an imperative or tool-generated advice.
 5. Verify the applied result and its non-applicable boundary. Link the accepted
    destination and evidence from the candidate; do not retain a second manually
    maintained copy of the active rule. Record the actual Git observation and
-   recoverable before-state in the existing Change/Record when material. Git
+   recoverable before-state in the selected work carrier when material. Git
    writes, external actions and final acceptance keep their normal gates.
 
 An approved but unapplied candidate is not active. An evaluation must not
@@ -88,7 +88,7 @@ If later edits overlap the old contribution, inspect the conflict; do not reset
 a whole practice file, registry or repository to an old version.
 
 Compact resolved candidates to result/decision/destination links and keep
-history in Git or existing Records. Archive only with normal retention authority;
+history in Git and the selected work carrier. Archive only with normal retention authority;
 do not silently delete user decisions or treat age as permission to withdraw.
 Framework updates preserve these project-owned sources; a fresh project gets
 none of another project's candidates, approvals or lessons. No automatic upload,

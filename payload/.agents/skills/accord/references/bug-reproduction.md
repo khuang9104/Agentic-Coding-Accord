@@ -39,7 +39,7 @@ uncertainty. If that uncertainty prevents a justified repair, explain the
 specific missing evidence; do not claim success. A new material design choice
 still follows the normal Decision Frontier.
 
-Use the response for read-only work and the existing Change for material work.
+Use the response for read-only work and the selected work carrier for material work.
 Record applied method/revision, commands, results and limitations; link evidence
 instead of duplicating it in project knowledge. After repair, check the original
 failure and affected behavior against the approved inputs and intended use.

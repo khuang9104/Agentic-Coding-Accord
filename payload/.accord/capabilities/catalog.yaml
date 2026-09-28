@@ -23,7 +23,7 @@
       "tree_sha": "21f240c8fa6898781ca7154e282ec8c79e420c20",
       "assessment": "integrated-adapter",
       "fit": "Adds intent-first repository discovery and structured inquiry into stack, structure, architecture, integrations, conventions, tests, and gaps.",
-      "constraint": "The initial-knowledge route loads the pinned method and inquiry checkpoints through accord-route.mjs. Apply the Accord adapter with its bounded inventory, docs/ outputs, and existing engineering owners. Do not execute upstream scan.py or create the seven-file docs/codebase pack.",
+      "constraint": "The initial-knowledge route loads the pinned method and inquiry checkpoints through accord-route.mjs. Apply the Accord adapter with its bounded inventory and registered canonical document owners. Do not execute upstream scan.py or create the seven-file docs/codebase pack.",
       "snapshot_member": "skills/acquire-codebase-knowledge"
     },
     {
@@ -54,8 +54,8 @@
       "upstream_path": "plugins/context-engineering",
       "tree_sha": "e957193b30a9dedc4244dbb77812d8b884792bf2",
       "assessment": "integrated-adapter",
-      "fit": "Adds a task-specific map of primary files, dependencies, tests, and reference patterns before a multi-file Change.",
-      "constraint": "Accord incorporates a bounded context and impact map into the active Change. Do not claim complete-file discovery or create a competing plan and approval pause.",
+      "fit": "Adds a task-specific map of primary files, dependencies, tests, and reference patterns before a multi-file work item.",
+      "constraint": "Accord incorporates a bounded context and impact map into the selected work carrier. Do not claim complete-file discovery or create a competing plan and approval pause.",
       "source_components": [
         {
           "path": "plugins/context-engineering",
@@ -121,7 +121,7 @@
       "tree_sha": "8283d7f7e7a342ceb16b6594b8a8fd0cfcf20f9c",
       "assessment": "integrated-adapter",
       "fit": "Turns vague or intermittent defects into minimal, repeatable, revision-bound evidence before diagnosis or repair.",
-      "constraint": "The bug-reproduction route preserves failure evidence before changing implementation. Store it in the existing Change or response and linked tests. Stop for reproduction-only requests, continue analysis for diagnosis, and continue authorized repair under existing Accord gates without a second approval pause. Upstream installation remains separate.",
+      "constraint": "The bug-reproduction route preserves failure evidence before changing implementation. Store it in the selected work carrier or response and linked tests. Stop for reproduction-only requests, continue analysis for diagnosis, and continue authorized repair under existing Accord gates without a second approval pause. Upstream installation remains separate.",
       "snapshot_member": "skills/bug-reproduction-brief"
     },
     {
@@ -143,7 +143,7 @@
       "tree_sha": "a984f58fe6b8372e02dc807e991152a351a530b4",
       "assessment": "integrated-adapter",
       "fit": "Useful for sequencing multi-file refactors around contracts, dependencies, verification, and recovery.",
-      "constraint": "The refactor-planning route reuses the current Context Map and sequences implementation with checks and recovery in the existing Change or planning-only response. Do not rescan sufficient context, create a competing plan or repeat settled implementation approval. Upstream installation remains separate.",
+      "constraint": "The refactor-planning route reuses the current Context Map and sequences implementation with checks and recovery in the selected work carrier or planning-only response. Do not rescan sufficient context, create a competing plan or repeat settled implementation approval. Upstream installation remains separate.",
       "snapshot_member": "skills/refactor-plan"
     },
     {
@@ -175,7 +175,7 @@
       "upstream_path": "skills/security-review",
       "tree_sha": "2c6732e6c9d8d3877953324c7605e45458fead3d",
       "assessment": "conditional",
-      "fit": "Useful when the user requests a security review or an approved Change has material security impact.",
+      "fit": "Useful when the user requests a security review or an approved work item has material security impact.",
       "constraint": "Findings and patches remain proposals until source evidence, false-positive review, scope, and applicable Accord gates are satisfied.",
       "snapshot_member": "skills/security-review"
     },

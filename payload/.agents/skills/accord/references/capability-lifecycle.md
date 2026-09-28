@@ -1,7 +1,7 @@
 # Capability Lifecycle
 
 Use this procedure only when the user requests a capability or ordinary tools
-and approved Skills leave a real specialized gap. Accord and the active Change
+and approved Skills leave a real specialized gap. Accord and the authorized work scope
 remain authoritative.
 
 The integrated methods on `.accord/capabilities/routes.yaml` are part of
@@ -15,7 +15,7 @@ human-approved binding and rollback. The task contract remains internal to Accor
 
 User-installed personal or project Skills remain usable and unmanaged. Do not
 move, disable, update, remove, or register them silently. Record material use,
-outputs, limitations, and observed provenance in the Change and Record.
+outputs, limitations, and observed provenance in the selected work carrier.
 
 For an Accord-managed capability:
 

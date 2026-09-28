@@ -2,254 +2,230 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-**一个由人类主导的 Agentic Software Engineering 框架。**
+**面向人机协作开发的仓库级软件工程协议与 Agent Harness。**
 
-Accord 为 Coding Agent 提供保存在项目仓库中的统一工程流程：澄清用户需求、
-确定设计输入、实施，再通过验证与确认（V&V）检查结果是否符合设计和需求。
-重要决定与最终接受由你负责，Agent 负责分析、实现和收集证据。
-持续维护的项目文档将这些决定与实际设计关联起来，用于后续开发、交接和知识库查询。
+Accord 将**需求与设计输入、模块契约、项目知识、验证与确认（V&V）以及决策权限**
+纳入同一套版本化工程流程。人类负责目标、关键取舍与验收；Coding Agent 在授权范围内
+执行分析、实现和验证，并维护可追溯的工程证据。
 
-适用于 **Codex 和 VS Code 中的 GitHub Copilot**。由指令、模板和本地脚本组成，
-不是另一个 Coding Agent，也不需要专用安装器或常驻服务。
+适用于 **Codex 和 VS Code 中的 GitHub Copilot**。协议以共享指令、可配置文档政策和
+本地校验工具保存在 Git 仓库中，支持跨会话协作、本地离线开发及可选的 GitHub 集成。
 
-> Accord 可用于共享 Git/GitHub 仓库，随代码共享工程规则和项目文档，
-> 并配合分支、PR 与代码评审使用。当前决策流程仍以一位明确负责人为主；
-> 多人审批、共识处理和团队配置等进一步协作机制尚未实现。
+[核心能力](#核心能力) · [快速开始](#快速开始) · [工程流程](#工程流程) · [项目知识](#项目文档与知识库) · [协作治理](#协作治理) · [方法扩展](#方法与扩展)
 
-[快速开始](#快速开始) · [工作方式](#工作方式) · [项目文档与知识库](#项目文档与知识库) · [内置方法](#awesome-copilot-方法)
+## 核心能力
 
-## 为什么用 Accord？
+| 能力模块 | 工程机制 | 作用 |
+| --- | --- | --- |
+| **需求与设计输入** | 明确目标行为、质量约束、接口契约和验收条件，关联需求、实现与证据 | 为 Agent 实施和人工评审提供一致的依据 |
+| **上下文与知识管理** | 按任务路由，登记层级模块与文档来源，结合依赖分析定位受影响范围 | 按需加载上下文，持续维护开发与运维知识 |
+| **验证与确认** | 对照设计输入执行 Verification，对照使用场景执行 Validation；证据关联 Git 版本与输入摘要 | 区分实现符合性、需求满足情况和未验证范围 |
+| **协作与决策治理** | 以 Issue/PR 或本地工作项承载变更，配置委托式或联邦式治理 | 明确模块权限、跨域批准要求与集成责任 |
 
-Agent 可以很快写出代码。但用户要什么、系统实际做了什么、文档是否还准确，
-不能只靠聊天记录来维持。
-
-- **共同明确要实现的行为。** 和 Agent 一起梳理需求、依赖与取舍，尚未解决的重要选择留给你决定。
-- **让评审有明确依据。** 将用户需求、已确认的设计输入与 V&V 证据关联起来，不只看测试是否通过。
-- **让模块之间保持对齐。** 明确输入、输出保证和失败行为；边界变化时检查受影响的调用方。
-- **留下可用的项目知识。** 记录架构、模块功能、接口和数据约定；系统变更时同步更新受影响内容。
-- **让工作方式随项目迁移。** 共享指令、编码实践和已审核方法保存在仓库中，供新会话、新机器继续使用。
+这些能力围绕当前任务组合使用。普通问答读取相关来源；局部修改检查受影响边界；
+跨模块或高风险工作补充相应的设计、影响分析与验证。已有决定和证据在适用条件不变时复用。
 
 ## 快速开始
 
-需要 Git、Node.js，以及能读写项目文件和执行命令的 Coding Agent。
-从 GitHub 获取 Accord 需要联网，也可以使用提前准备好的本地副本。
-你的项目不必托管在 GitHub 上。
+前提：Git、Node.js，以及具备项目文件和命令访问能力的 Coding Agent。
+可使用官方仓库或预先获取的本地来源副本；目标项目可以仅使用本地 Git。
 
-### 1. 让 Agent 安装 Accord
+### 1. 安装或更新项目配置
 
-在 Codex 或 GitHub Copilot Agent 模式中打开**目标项目**，粘贴：
+在 Codex 或 GitHub Copilot Agent 模式中打开**目标项目**，提交以下请求：
 
 ```text
-请从以下仓库为当前项目安装或更新 Accord：
+请从以下官方仓库为当前项目安装或更新 Accord：
 https://github.com/khuang9104/Agentic-Coding-Accord
 
-获取独立的来源副本，记录完整 commit，并遵循同一副本中的
-CONFIGURE_WITH_AGENT.md。
-保留现有项目文档、配置、Skills、历史记录，以及 Agent 指令中的
-非 Accord 内容。直接执行无冲突的合并；遇到未解决的冲突或尚未
-授权的操作时再询问。
-使用该来源副本中的工具验证发布包和安装结果。
-报告更新前后版本、来源 commit、变更、校验结果和剩余事项。
-不要把部分更新报告为全部完成。
+获取独立来源副本，记录完整 commit，并遵循同一副本中的
+CONFIGURE_WITH_AGENT.md。保留现有项目文档、配置、Skills 和
+Agent 指令中的非 Accord 内容。执行已授权且无冲突的合并；
+汇总尚未解决的实质冲突或授权缺口。
+使用该来源副本的工具验证发布包及安装结果，报告版本、来源、
+变更、校验结果和未完成事项。
 ```
 
-Agent 会合并 Codex 与 Copilot 的入口指令、配置 Accord、检查已有编码实践。
-初次部署基于已有资料建立项目文档视图；更新时保留已有内容，只刷新受影响部分。
-Git 初始化、commit 和依赖安装需要相应授权；
-已经授权的步骤不重复询问。生成的项目事实仍需审核。
+Agent 将合并入口指令、配置工程政策并关联已有项目资料。首次接入建立项目知识视图；
+后续更新按差异迁移。Git 初始化、提交及依赖安装遵循适用授权，已授权事项无需再次确认。
+离线接入时，将 URL 替换为已获取的来源副本路径。
 
-**以后更新：** 使用同一段提示词。已有项目内容按差异合并，不重置成空白模板。
-离线部署时，将网址换成提前下载的来源副本路径。
-
-手动复制、版本追踪、冲突处理和旧版迁移见[安装与更新指南](CONFIGURE_WITH_AGENT.md#中文)。
-仅复制 `payload/` 并不代表配置完成。
-
-**可选 Copilot 插件：** 可以从本仓库的插件目录安装
-[项目配置入口](plugins/agentic-coding-accord/README.md)，使用固定的已测试发布版本
-初始化、检查或更新项目。插件升级不会自动改动项目；请再让 Agent 更新项目并验证合并结果。
-插件固定的发布版本可能落后于默认分支；如有需要，可明确指定官方来源版本。
+[安装与更新指南](CONFIGURE_WITH_AGENT.md#中文)提供完整的配置、迁移和来源验证步骤。
 当前副本的版本见[发布元数据](RELEASE.json)。
-上面的 Prompt 安装方式仍适用于 Codex 和 Copilot。
 
-### 2. 用正常的项目请求开始
+**可选 Copilot 插件：** [Accord 项目配置入口](plugins/agentic-coding-accord/README.md)
+提供安装、版本检查和更新入口，并锁定已测试的分发版本。插件升级与目标项目升级相互独立；
+插件锁定版本也可能落后于默认分支。上述提示词方式同时适用于 Codex 和 Copilot。
 
-不需要记忆新的斜杠命令。例如：
+### 2. 提交工程任务
+
+直接描述预期行为、约束和工作范围：
 
 ```text
 增加发货前取消订单的功能，保持已完成订单的行为不变。
-先帮我澄清退款和库存恢复规则，再提出设计输入与验收场景。
-尚未决定的选择保持待定，不要替我确认。
+明确退款与库存恢复规则，形成设计输入和验收场景；
+仅对尚未确定且影响行为的选择向我提问，再完成实现与验证。
 ```
 
-已有项目也可以从文档开始：
+已有项目也可以先建立知识基础：
 
 ```text
-整理项目文档和知识库，覆盖架构、模块功能、API 输入输出、
-数据库字段和枚举。复用已有文档，区分确认的需求与代码实际行为，
-列出还不清楚或缺失的内容。
+整理项目文档和知识库，覆盖系统架构、模块职责、API 契约、
+数据字段、枚举和运行维护流程。复用已有权威来源，
+区分已确认需求与代码实际行为，报告缺失或无法验证的内容。
 ```
 
-明确指令可以同时表达决定和实施授权。Accord 只追问缺少的重要选择，
-不要求用户反复批准同一件事。
+## 工程流程
 
-## 工作方式
+Accord 将需求工程、契约设计与 V&V 组织为可迭代流程：
 
-Accord 的人机协作不只是在结尾请用户批准。Agent 参与问题梳理和方案探索，
-遇到影响结果的重要不确定性时，请用户参与决策。目标是在明确边界内自主执行，
-减少不必要的确认和返工，而不是让人退出工程决策。
-
-流程采用 **V 模型的思路**：先定义结果需要满足什么，再将验证与确认作为
-贯穿变更过程的反馈机制。
-
-| 阶段 | 具体做什么 |
+| 阶段 | 输入与输出 |
 | --- | --- |
-| 澄清需求 | Agent 和用户梳理目标、受影响模块、使用场景与取舍。 |
-| 定义输入 | 将已达成一致的要求转为**设计输入**：行为、约束、接口与数据约定、验收条件。 |
-| 实施变更 | Agent 在授权范围内执行；用 **Change** 记录本次差异、决定和证据引用。 |
-| Verification（验证） | 检查实现是否符合已批准的需求和设计输入。 |
-| Validation（确认） | 在有代表性的整体使用场景中，检查结果是否满足用户需求。 |
-| 用户接受 | 用户评审证据与剩余缺口；结果提交后，以精简 Record 关联对应 Git 版本。 |
+| 需求分析 | 明确利益相关方、使用场景、目标行为、范围及关键取舍 |
+| 设计输入 | 将已确认需求转化为行为、接口、数据、质量约束及可判定的验收条件 |
+| 实现 | 在授权边界内修改代码与相关工程资料，由现有工作项记录差异和决策依据 |
+| Verification（验证） | 检查实现是否符合需求与设计输入，记录测试或分析证据 |
+| Validation（确认） | 在代表性使用场景中评估集成结果是否满足用户需求 |
+| 验收 | 由具备相应权限的负责人评审结果、证据及剩余缺口，关联实际版本 |
 
-新增或变更需求时，只重新处理受影响的决定。旧文档和测试是当前基线，
-不能否决用户有意改变的方向。小范围、可逆修改采用相应检查，
-不必走完整的重大变更流程。
+该流程借鉴 V 模型中需求、设计与验证活动的对应关系，并支持增量实施与反馈。
+需求变化只重新评估受影响的决定；现有文档、代码和测试构成可修订的基线。
+验收、提交、合并和部署是独立事件。
 
-### 模块边界
+## Agent 运行机制
 
-契约说明模块需要什么、保证什么，以及适用的错误、状态变化和副作用。
-Agent 可以在这些边界内调整实现，复用已有 Schema、类型和测试，
-不要求每个模块另建一套文档。
-
-边界变化时，Accord 引导 Agent 同时检查依赖与调用方。本地工具根据已登记的
-模块关系列出候选范围，再通过代码检查和测试确认实际影响。未知关系保留为缺口，
-不当作兼容性证明。未变化的决定继续复用，文档只在事实变化时更新。
-
-[模块边界与影响分析](payload/.agents/skills/accord/references/engineering-documents.md#module-boundaries-during-a-change)
-
-### Harness 如何起作用？
-
-Accord 的 Harness 是建立在现有 Coding Agent 之上的项目级工程层。
-Prompt Engineering 用于组织指令，Context Engineering 用于选择相关项目知识，
-任务路由、产物规范与本地校验器支持执行和反馈。Agent 负责实际工作，
-脚本检查声明的结构、引用和完整性；Accord 不替代 Agent 本身的执行循环、权限或沙箱。
+Accord 通过简短入口将 Agent 路由到当前任务所需的流程、知识来源和方法。
+Agent 执行推理与工程操作；本地工具检查声明结构、引用、内容完整性和证据状态。
 
 ```text
 目标项目
-├── AGENTS.md + .github/copilot-instructions.md   原位合并的 Agent 入口
-├── .agents/skills/accord/                       共享流程与本地工具
-├── .accord/                                    配置、Change、Record 与方法
-└── docs/                                       项目知识与编码实践
+├── AGENTS.md + .github/copilot-instructions.md   Agent 入口
+├── .agents/skills/accord/                       共享协议、流程与本地工具
+├── .accord/                                    项目配置、治理政策与可选本地工作项
+└── docs/                                       项目知识登记、文档与编码实践
 ```
 
-短入口将两个 Agent 引向同一套流程。具体步骤、模块细节和方法按需读取，
-已完成的历史记录不作为默认上下文。Git 用于版本控制、差异检查和恢复，
-不是额外的审批流程。用户接受结果，不意味着必须立刻 commit 或 push。
+**上下文管理。** 根据需求、模块或文档引用选择相关来源，再沿父级、依赖和文档引用扩展。
+涉及契约变化时，同时检查消费者、共享数据、配置和动态注册边界。已完成工作与无关历史
+不作为默认上下文；声明图之外的关系通过代码检查和测试确认，未知部分保持显式缺口。
 
-并行工作时，Accord 要求明确写入范围、共同基线和集成顺序，按需使用分支或 worktree。
-GitHub 访问权限、必需评审和合并保护仍由仓库设置控制，不由 Accord 强制执行；
-PR 获批也不会自动更新 Accord 的决策记录。
+**模块化设计。** 模块契约描述前置条件、输出保证、错误行为、状态转换及副作用。
+等价内部实现由 Agent 自主选择；影响外部可观察行为的决定按治理政策处理。
+Schema、类型和测试保留精确的可执行事实，文档说明职责、约束与设计依据。
 
-这套方法将已有的需求工程与 V&V，和当前的人机协作、Harness 设计方向结合起来。
-相关阅读：[Agentic Software Engineering 研究路线图](https://arxiv.org/abs/2509.06216)、
-[Anthropic 的 Context Engineering 实践](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)、
-[OpenAI 的 Harness Engineering 实践](https://openai.com/index/harness-engineering/)。
-Accord 是面向实际项目的组合与适配，并非上述工作的参考实现。
+[上下文与影响分析](payload/.agents/skills/accord/references/project-knowledge.md#route-and-inspect)
 
 ## 项目文档与知识库
 
-Accord 引导 Agent 结合已有文档和必要的代码检查，建立统一项目参考，
-并在后续变更中持续维护。
+开发文档和运维知识使用统一登记，每项事实保留一个权威维护位置。
+文档范围覆盖系统、模块、子模块及重要组件，按工程重要性确定描述深度。
 
-| 项目路径 | 用途 |
+### 文档组织与覆盖
+
+| 来源 | 内容 |
 | --- | --- |
-| `docs/README.md`、`docs/manifest.yaml` | 导航、模块清单、审核状态与缺口 |
-| `docs/agent-context.md` | 开始编程时使用的精简上下文 |
-| `docs/system-overview.md`、`docs/architecture.md` | 系统目标、边界、组件与运行流程 |
-| `docs/interfaces-and-data.md` | 接口与数据归属概览 |
-| `docs/modules/<module-id>.md` | 模块功能、输入输出、数据与状态规则、依赖 |
-| 已登记的细节文档与 `docs/contracts/<module-id>/` | 较大的模块细节，以及适用的机器可读契约 |
-| `docs/glossary.md` | 项目术语与别名 |
+| 项目知识登记 | 文档与模块的稳定标识、路径、引用、状态、受众和覆盖缺口 |
+| 系统级文档 | 用户需求、设计输入、架构、系统约束、接口与数据归属 |
+| 模块／组件文档 | 职责、契约、状态与错误行为、依赖、源码映射、测试及运维信息 |
+| 可执行契约与证据 | Schema、类型、测试，以及与实际版本关联的 V&V 结果 |
+| 编码上下文导航 | 可选的常用命令、关键路径和检索入口 |
 
-目标不是只有架构摘要：适用的字段、枚举、默认值、错误处理和状态转换，
-都应落在对应模块或契约中。需求、设计输入、决定和 V&V 保留原有权威来源，
-通过引用关联，不重复复制。
+`.accord/documentation-policy.yaml` 定义按模块类型适用的主题、合并或拆分方式，
+以及可选的文件数量约束。`docs/manifest.yaml` 登记系统文档与层级模块元数据；
+已有文档可以继续使用原路径，重要类可登记为组件，普通内部实现可通过文件索引覆盖。
 
-变更时原位修正过时内容；模块及依赖的观察记录帮助判断哪些文档需要复核，
-历史交给 Git。**是否过期、覆盖是否充分、能否脱离源码重建，是不同的评估结论。**
+目标是提供足以重现约定架构、模块、功能和文件组织的工程信息。内容随受影响的实现与
+需求更新，历史由 Git 保存。内容新鲜度、语义覆盖和重建验证分别评估。
 
-交接或接入外部知识库时，在目标项目中导出明确的、不含源码的文档集合：
+### 运维检索与发布
+
+在目标项目中导出不含源码的知识集合：
 
 ```sh
 node .agents/skills/accord/scripts/accord-knowledge-export.mjs --project . --mode query --output ../project-knowledge
 ```
 
-导出包含选定文档和完整性收据，不包含源码或 Agent 的精简上下文缓存。
-对外分享前仍需审阅。文档可以支持在约定范围内重建等价行为，
-但导出成功本身不代表资料完整，也不代表已经通过重建验证。
+导出包含选定文档与完整性收据。面向 SharePoint、Copilot Studio 或自建检索 Agent 的
+下游 pipeline，可以进一步获取发布清单：
 
-[文档契约](payload/.agents/skills/accord/references/engineering-documents.md) · [查询与导出说明](payload/.agents/skills/accord/references/knowledge-query-and-refresh.md)
+```sh
+node .agents/skills/accord/scripts/accord-project.mjs --project . --publish --audience operations
+```
 
-## Awesome Copilot 方法
+清单包含稳定 ID、内容哈希、必要引用、审核状态和遗漏；提供同一选择范围的
+`--previous` 清单可识别删除项。下游 pipeline 负责格式转换、索引、访问控制和部署版本绑定。
+Accord 不直接向 SharePoint 发布。
 
-Accord 适配了 [GitHub Awesome Copilot](https://github.com/github/awesome-copilot/tree/7b1ebe6333397841ca918dec904d24d4695fe953)
-中的七种方法。已审核源码以 MIT 协议随包提供，固定在 commit `7b1ebe633339`，
-使用这些内置方法不依赖上游持续在线。
+[文档政策与格式](payload/.agents/skills/accord/references/project-knowledge.md) · [查询与导出](payload/.agents/skills/accord/references/knowledge-query-and-refresh.md)
 
-适配由 Accord 维护，保留上游版权与 MIT 许可声明。
-Accord 是独立项目，与 GitHub 无隶属关系，也不代表其官方认可或背书。
+## 协作治理
 
-| 方法 | 在 Accord 中的用途 |
+工作过程优先使用 Issue/PR，离线场景使用本地工作项。需求与设计输入作为持久工程资产
+保存在各自来源中；工作项记录本次变更的目标、范围、决定和证据引用。
+活动工作索引按需查询，已关闭工作的讨论正文不进入默认上下文。
+
+`.accord/governance.yaml` 支持两种决策权限模型：
+
+| 模式 | 权限模型 | 跨模块变更 |
+| --- | --- | --- |
+| **委托式治理** `delegated` | 项目负责人保留项目级决策权限，模块成员在受委托范围内行使权限 | 由项目负责人批准，或由各受影响域的授权成员分别批准 |
+| **联邦式治理** `federated` | 各模块域具有独立决策权限，共享约束通过显式系统域管理 | 每个受影响域分别批准；项目负责人不具有隐含的跨域覆盖权限 |
+
+委托式模式下，政策或归属变更、共享系统范围及显式执行授权要求项目级权限；
+联邦式模式下，政策或归属变更要求所有现有域批准。两者均使用变更前的可信政策审核。
+并行开发需明确写入范围、共同基线、
+依赖及集成责任，按需使用分支或 worktree。任务基线由 Git commit 和相关输入版本组成，
+无关提交不自动使需求决定失效。
+
+GitHub 适配器读取目标分支政策，检查绑定 PR head、target 和批准范围的审查证据。
+当前远程检查在 target 变化后要求新的批准标记；CI、分支保护和合并资格仍由目标仓库管理。
+
+[工作项、基线与治理契约](payload/.agents/skills/accord/references/team-work.md)
+
+## 方法与扩展
+
+Accord 按任务适配七种来自
+[GitHub Awesome Copilot](https://github.com/github/awesome-copilot/tree/7b1ebe6333397841ca918dec904d24d4695fe953)
+的方法。已审核源码固定在 commit `7b1ebe633339`，随包保留 MIT 许可与版权声明，
+可离线加载；方法所需的执行工具仍由项目环境提供。
+
+| 方法 | 职责 |
 | --- | --- |
-| `acquire-codebase-knowledge` | 仓库理解与文档清单整理 |
-| `arch` | 带源码引用的架构分析 |
-| `context-engineering` | 当前 Change 的必要上下文与影响分析 |
-| `documentation-writer` | 面向读者的技术文档写作 |
-| `bug-reproduction-brief` | 可重复的缺陷证据 |
-| `refactor-plan` | 考虑依赖关系的重构计划 |
-| `webapp-testing` | 使用已具备且获授权的工具检查浏览器场景 |
+| `acquire-codebase-knowledge` | 仓库发现与知识来源整理 |
+| `arch` | 基于源码证据的架构分析 |
+| `context-engineering` | 任务上下文与影响范围分析 |
+| `documentation-writer` | 面向读者任务的技术文档写作 |
+| `bug-reproduction-brief` | 最小、可重复的缺陷证据 |
+| `refactor-plan` | 依赖顺序、行为保持与恢复方案 |
+| `webapp-testing` | 基于已具备且获授权工具的浏览器场景验证 |
 
-这些是**经过适配的方法，不是自动安装的上游插件**。产物位置和权限仍由 Accord 约束。
-选择或加载方法不等于实际应用，Agent 需要说明真实使用情况。
-测试沿用项目本身的语言、平台和测试工具。
+方法加载、实际应用和验证具有不同状态。启用新增或替代方法前，需审核适用范围、
+效果证据、依赖与权限。项目编码实践独立维护，用户已有 Skills 保持可用。
+反复出现的工程问题可以转化为经批准的规则、检查或方法调整。
 
-Accord 还借鉴了 `code-tour` 中先检查项目、再询问用户的交互方式。
-`project-documenter`、`drawio` 和 `md-to-docx` 是可选的展示输出能力，默认停用。
-详见[能力目录](payload/.accord/capabilities/catalog/index.yaml)与[上游许可](vendor/awesome-copilot/7b1ebe633339/LICENSE)。
+`code-tour` 提供先检查项目再询问的交互参考；`project-documenter`、`drawio` 和
+`md-to-docx` 为默认停用的可选展示能力。Accord 是独立项目，与 GitHub 无隶属或背书关系。
 
-## 自定义与改进
-
-编码习惯保存在 `docs/engineering/coding-practices.md` 或配置指定的文件中。
-初次配置时，Agent 先检查已有规则，再询问采用哪些内容。
-用户自行安装的 Skills 仍然可用，不会自动被 Accord 接管。
-
-你可以让 Agent 评估、增加或替换某个方法；启用前需要审核其范围、效果证据、
-依赖与权限。重复出现的问题可以转化为经批准的编码实践、可执行检查或方法调整，
-不会自动堆进主指令。
-
-[方法扩展](payload/.agents/skills/accord/references/project-methods.md) · [项目内改进](payload/.agents/skills/accord/references/project-improvement.md)
+[能力目录](payload/.accord/capabilities/catalog/index.yaml) · [方法扩展](payload/.agents/skills/accord/references/project-methods.md) · [持续改进](payload/.agents/skills/accord/references/project-improvement.md) · [上游许可](vendor/awesome-copilot/7b1ebe633339/LICENSE)
 
 ## 校验与边界
 
-在已部署 Accord 的项目中查看本地版本：
+在已接入 Accord 的项目中查看安装状态：
 
 ```sh
 node .agents/skills/accord/scripts/accord-adoption.mjs --mode status --project .
 ```
 
-日常工作使用限定范围的安装、任务或交付检查，由 Agent 选择相关 Change 和模块，
-说明已检查与未覆盖的范围。查看版本不等于验证安装完整；完整文件及来源检查见
-[安装与更新指南](CONFIGURE_WITH_AGENT.md#中文)。
-
-需要包含历史记录的全量审计时，再运行：
+安装、任务和交付使用各自范围的检查；检查结果同时报告已覆盖内容和缺口。
+需要包含本地归档工作的全量审计时运行：
 
 ```sh
 node .agents/skills/accord/scripts/accord-validate.mjs --project . --scope audit
 ```
 
-Accord 是基于指令的 Harness，不是运行时安全隔离机制。
-校验器不能证明 Agent 已正确理解用户、文档一定完整，或结果应该被接受，
-这些仍需要人工评审。安装和 Git 写操作需要相应授权，push 是独立操作。
-Accord 不运行后台服务，也不自主升级。
+Accord 是基于指令与工具的工程 Harness。Agent 的执行权限与沙箱由宿主环境提供；
+机械校验能够发现结构、引用、版本或证据状态问题，需求理解、语义完整性与最终验收仍需评审。
+Accord 使用本地脚本，不运行常驻服务或执行自主升级。
 
 ## 许可证
 

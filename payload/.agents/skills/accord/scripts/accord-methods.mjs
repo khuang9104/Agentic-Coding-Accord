@@ -97,12 +97,8 @@ function validateEntry(entry, tasks, reserved) {
 
 export function validateMethodRegistry(registry, { tasks, reserved }) {
   const errors = [];
-  if (!object(registry) || !['1.0', '1.1'].includes(registry.schema_version) || registry.registry !== 'accord-project-capabilities') return ['Invalid method registry identity or schema.'];
+  if (!object(registry) || registry.schema_version !== '1.1' || registry.registry !== 'accord-project-capabilities') return ['Invalid method registry identity or schema.'];
   for (const [key, value] of Object.entries(CAPABILITY_POLICY)) if (registry.policy?.[key] !== value) errors.push('Method registry policy.' + key + ' must preserve ' + value + '.');
-  if (registry.schema_version === '1.0') {
-    if (registry.methods !== undefined) errors.push('Project methods require registry schema 1.1; legacy registries must not silently enable bindings.');
-    return errors;
-  }
   if (!Array.isArray(registry.methods) || registry.methods.length > 64) return [...errors, 'Method registry needs a bounded methods array.'];
   const seen = new Set();
   for (const entry of registry.methods) {

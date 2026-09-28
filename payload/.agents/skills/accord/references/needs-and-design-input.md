@@ -97,9 +97,9 @@ Classify only affected or important coupled inputs:
 
 Do not enumerate every unaffected requirement. Record `preserve` only where it
 controls scope, coupling, compatibility, or acceptance. Git retains the former
-baseline; the active Change owns only the inspectable delta.
+baseline; the selected work carrier owns only the inspectable delta.
 
-After alignment, draft only the dimensions material to the Change:
+After alignment, draft only the dimensions material to the work item:
 
 1. intended users, use context, desired outcome, observable success;
 2. normal, boundary, failure, recovery, and material misuse scenarios;
@@ -131,8 +131,8 @@ possibly in the original request, not the entire baseline again. Record
 the required Git base and checkpoint before affected implementation.
 
 Register existing need, Design Input, decision and issue owners in
-`sources.engineering` for retrieval in later sessions. Follow the owner and
-approval rules in `engineering-documents.md`; reuse settled sources, do not
+the knowledge 2.0 registry for retrieval in later sessions; use `project-knowledge.md`
+for its format. Reuse settled sources, do not
 create a second baseline or infer approval from implementation. On approval,
 replace the affected target text in its owner. Keep not-yet-implemented targets
 distinct from the module's observed design until implementation is verified.

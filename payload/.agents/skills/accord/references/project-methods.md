@@ -18,7 +18,7 @@ remain usable and unmanaged.
 3. Compare the old and proposed methods on the same representative tasks and
    frozen acceptance criteria. Inspect actual output, not just route loading.
    Include incomplete/wrong output, dependency gaps and permission conflicts.
-   Keep evidence with existing tests/Changes, not another knowledge summary.
+   Keep evidence with existing tests/work carriers, not another knowledge summary.
 4. Present source/revision/license, adapter diff, tasks, applicability,
    prerequisites, permissions, output contract, evaluation and rollback.
    Only a human decision can approve the binding. Declining it leaves existing
@@ -83,7 +83,7 @@ A packet's `loaded` state is distinct from its `use_gate`, preflight,
 application and output verification. Resolve `human-decision-required` before
 use, then apply the method and check actual results against the unchanged task
 contract. Record method/ref, use, outputs, evidence and limitations in existing
-Change/Record fields. `--view audit` returns source for inspection only.
+work evidence. `--view audit` returns source for inspection only.
 
 Missing, disabled, mismatched or drifted methods fail explicitly; there is no
 silent built-in fallback. Explain the limitation and either use a previously
