@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Official Accord project setup and update entry.",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "plugins": [
     {
       "name": "agentic-coding-accord",
       "description": "Set up, inspect and update Accord's project-local requirements, V&V and engineering documentation workflow.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "source": "./plugins/agentic-coding-accord"
     }
   ]

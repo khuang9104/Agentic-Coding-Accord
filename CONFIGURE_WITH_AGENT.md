@@ -93,7 +93,7 @@ resolve legacy layout collisions before proposing a registry migration; preserve
 historical Records and unrelated files. Never set an old view to `current` merely because
 the runtime update passed validation.
 
-New adoptions use knowledge 2.0, configuration 0.9 and protocol 0.10.0.
+New adoptions use knowledge 2.0, configuration 0.10 and protocol 0.11.0.
 Entry markers remain 0.8; route/registry remain 1.3/1.1. Read
 `references/project-knowledge.md` for hierarchical module declarations and the
 editable documentation policy; `references/team-work.md` covers Issue/PR work,
@@ -256,7 +256,7 @@ README 和本指南，哈希也不能代替发布者身份认证。无需另行�
 `docs/knowledge/` 应先解决旧布局冲突，再提出登记迁移方案，保留用户内容和历史 Record。
 校验通过不能自动把旧知识状态改成 `current`。
 
-新项目采用知识结构 2.0、配置 0.9、协议 0.10.0。入口标记仍为 0.8，路由/registry
+新项目采用知识结构 2.0、配置 0.10、协议 0.11.0。入口标记仍为 0.8，路由/registry
 仍为 1.3/1.1。按 `references/project-knowledge.md` 配置分层模块和可修改的文档政策；
 按 `references/team-work.md` 选择 Issue/PR 或本地工作载体，以及委托或模块独立决策模式。
 配置真实负责人和权限域；默认的本地示例身份不能证明 GitHub 评审者身份。

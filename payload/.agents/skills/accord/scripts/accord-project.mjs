@@ -63,7 +63,7 @@ export function validateDocumentationPolicy(policy) {
 // Documents are declared once, at system level or inside their owning module.
 // Index is derived in memory; no global mutable task pointer or duplicated authoring registry.
 export function loadProjectModel(root, config = readJson(root, '.accord/accord.yaml'), manifest = readJson(root, 'docs/manifest.yaml')) {
-  if (config.schema_version !== '0.9' || config.knowledge_base?.structure_version !== '2.0') throw new Error('Migrate configuration and knowledge together before using current project tools.');
+  if (config.schema_version !== '0.10' || config.knowledge_base?.structure_version !== '2.0') throw new Error('Migrate configuration and knowledge together before using current project tools.');
   if (manifest.schema_version !== '2.0' || manifest.structure !== 'accord-project-knowledge' || manifest.knowledge_root !== 'docs' ||
       !['draft', 'current'].includes(manifest.status) || !strings(manifest.module_files) || !Array.isArray(manifest.documents)) throw new Error('Expected knowledge 2.0 registry.');
   const policyPath = config.documentation?.policy;

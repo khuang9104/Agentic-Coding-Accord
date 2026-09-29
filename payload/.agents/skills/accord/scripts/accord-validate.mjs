@@ -10,6 +10,7 @@ import { parseExactJson, safeContractPath } from './accord-contracts.mjs';
 import { CAPABILITY_POLICY } from './accord-methods.mjs';
 import { loadProjectModel, validateProjectKnowledge, readJson, relativePath } from './accord-project.mjs';
 import { validateGovernancePolicy, POLICY_PATH } from './accord-governance.mjs';
+import { validateVvPolicy } from './accord-vv.mjs';
 import { validateWorkItem, indexLocalWork } from './accord-work.mjs';
 import { CONFIG_SCHEMA, PROTOCOL_VERSION, RISK_LEVELS, MATERIAL_RISKS, VALIDATION_SCOPES, BUDGET_KEYS } from './accord-protocol.mjs';
 
@@ -107,6 +108,8 @@ export function verifyConfiguration(config, errors) {
     return;
   }
 
+  errors.push(...validateVvPolicy(config.vv));
+  if (config.vv?.verification_target !== 'approved-requirements-and-design-inputs' || config.vv?.validation_target !== 'user-needs-and-intended-use' || config.vv?.revision_binding_required !== true) errors.push('V&V targets and revision binding are required.');
   if (config.schema_version !== ACCORD_SCHEMA_VERSION) errors.push('Migrate configuration to schema ' + ACCORD_SCHEMA_VERSION + ' before use.');
   if (config.accord?.version !== ACCORD_VERSION) errors.push('Expected accord.version ' + ACCORD_VERSION + '.');
 
@@ -114,10 +117,10 @@ export function verifyConfiguration(config, errors) {
     errors.push('Expected accord.release to be a semantic release version.');
   }
 
-  if (config.schema_version === '0.9') {
+  if (config.schema_version === '0.10') {
     try { relativePath(config.documentation?.policy); relativePath(config.work?.local_directory); }
     catch (e) { errors.push(e.message); }
-    if (config.governance?.policy !== POLICY_PATH || !['github-preferred', 'local'].includes(config.work?.carrier)) errors.push('Configuration 0.9 requires versioned governance and an explicit work carrier.');
+    if (config.governance?.policy !== POLICY_PATH || !['github-preferred', 'local'].includes(config.work?.carrier)) errors.push('Configuration 0.10 requires versioned governance and an explicit work carrier.');
   }
 
   if (!['compact', 'standard', 'assurance'].includes(config.information?.profile)) {
@@ -650,9 +653,9 @@ function loadKnowledgeManifest(projectRoot, errors) {
   }
 }
 
-function verifyKnowledgeBase(projectRoot, config, agents, copilot, errors, warnings, requestedModules = null) {
+function verifyKnowledgeBase(projectRoot, config, agents, copilot, errors, warnings, requestedModules = null, getModel = null) {
   try {
-    const model = loadProjectModel(projectRoot, config);
+    const model = getModel ? getModel() : loadProjectModel(projectRoot, config);
     const result = validateProjectKnowledge(model, { modules: requestedModules });
     errors.push(...result.errors);
     const gaps = result.gaps.map(g => 'Knowledge gap: ' + JSON.stringify(g));
@@ -825,8 +828,10 @@ function validateProjectUnchecked(projectInput, options = {}) {
 
   const config = loadConfiguration(projectRoot, errors);
   verifyConfiguration(config, errors);
+  let projectModel;
+  const getModel = () => projectModel ||= loadProjectModel(projectRoot, config);
   if (!options.scope) warnings.push('Inferred validation scope: ' + scope + '. Pass --scope explicitly; unscoped calls perform audit.');
-  if (config?.schema_version === '0.9') {
+  if (config?.schema_version === '0.10') {
     try { errors.push(...validateGovernancePolicy(readJson(projectRoot, POLICY_PATH))); checked.push('governance-policy-shape'); }
     catch (e) { errors.push(e.message); }
     notChecked.push('human-authority-and-remote-review-authentication');
@@ -835,7 +840,7 @@ function validateProjectUnchecked(projectInput, options = {}) {
   if (options.work) {
     try {
       const work = readJson(projectRoot, options.work);
-      const result = validateWorkItem(projectRoot, work, { delivery: scope === 'delivery' });
+      const result = validateWorkItem(projectRoot, work, { delivery: scope === 'delivery', config, model: scope === 'delivery' ? getModel() : undefined });
       if (Array.isArray(work.modules)) workModules = work.modules;
       errors.push(...result.errors); warnings.push(...result.warnings); checked.push('work:' + options.work);
     } catch (e) { errors.push(e.message); }
@@ -853,7 +858,8 @@ function validateProjectUnchecked(projectInput, options = {}) {
     copilot,
     errors,
     warnings,
-    moduleSelection
+    moduleSelection,
+    getModel
   ) : [];
   if (inspectKnowledge) checked.push(moduleSelection.length ? 'knowledge:' + moduleSelection.join(',') + '+dependencies' : 'all-knowledge');
   else notChecked.push('knowledge-content-and-coverage');

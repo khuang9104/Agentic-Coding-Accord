@@ -133,7 +133,7 @@ authenticity nor user acceptance or documentation quality. Report files
 configured, mechanical checks and knowledge review separately; missing Git,
 Node, source evidence or user decisions cannot be reported as completion.
 
-New adoption uses configuration 0.9, knowledge 2.0 and release/protocol 0.10.0.
+New adoption uses configuration 0.10, knowledge 2.0 and release/protocol 0.11.0.
 Entry markers remain 0.8, routes 1.3 and registry 1.1. Configure documentation
 and governance policies; use `project-knowledge.md` and `team-work.md`.
 Retired formats do not run side by side. During an authorized update:

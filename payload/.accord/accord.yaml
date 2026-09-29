@@ -1,8 +1,8 @@
 {
-  "schema_version": "0.9",
+  "schema_version": "0.10",
   "accord": {
-    "version": "0.10.0",
-    "release": "0.10.0",
+    "version": "0.11.0",
+    "release": "0.11.0",
     "installation": "vendored",
     "installation_record": ".accord/installation.json"
   },
@@ -134,7 +134,11 @@
   "vv": {
     "verification_target": "approved-requirements-and-design-inputs",
     "validation_target": "user-needs-and-intended-use",
-    "revision_binding_required": true
+    "revision_binding_required": true,
+    "schema_version": "1.0",
+    "test_root": "tests",
+    "layout_exceptions": [],
+    "checks": []
   },
   "documentation": {
     "policy": ".accord/documentation-policy.yaml"

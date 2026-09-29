@@ -5,6 +5,24 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ID, strings, digest, readJson, relativePath } from './accord-project.mjs';
 
+export function planVvMigration(config, work = null) {
+  if (config.schema_version !== '0.9') throw new Error('V&V migration requires configuration 0.9.');
+  if (work && work.schema_version !== '1.0') throw new Error('V&V work import requires work 1.0.');
+  const next = structuredClone(config);
+  next.schema_version = '0.10';
+  next.accord.version = next.accord.release = '0.11.0';
+  next.vv = { ...next.vv, schema_version: '1.0', test_root: 'tests', layout_exceptions: [], checks: [] };
+  const migrated = work ? { ...structuredClone(work), schema_version: '1.1', evidence: [],
+    obligations: ['verification', 'validation'].map(purpose => ({ id: 'import-' + purpose, purpose,
+      target: work.requirements?.[0] || work.id, expected: 'Reconcile the original approved ' + purpose + ' criteria.',
+      disposition: 'unmet', evidence: [] })) } : null;
+  if (migrated) delete migrated.scope_review;
+  return { mode: 'proposal-only', configuration: next, work: migrated, preserved_evidence: work?.evidence || [],
+    gaps: ['Register existing runner commands and test assets; relocate assets with framework-specific exceptions.',
+      'Reconcile all requirements and inspect original evidence before binding current inputs, environment and scope.'],
+    instruction: 'Apply reviewed configuration, runtime and work together. Old evidence is retained for inspection, never automatically upgraded to a pass.' };
+}
+
 // Read-only migration proposal: retains files/IDs and never upgrades evidence.
 export function planKnowledgeMigration(root, config = readJson(root, '.accord/accord.yaml'), old = readJson(root, 'docs/manifest.yaml')) {
   if (!['1.2', '1.3', '1.4'].includes(old.schema_version) || !strings(old.modules) || !strings(old.documents)) throw new Error('Migration requires a recognized legacy knowledge registry.');
@@ -56,7 +74,7 @@ export function planKnowledgeMigration(root, config = readJson(root, '.accord/ac
     manifest: { schema_version: '2.0', structure: 'accord-project-knowledge', knowledge_root: 'docs', status: 'draft',
       module_files: declarations.map(m => m.path), documents: [...docs.values()].filter(d => !d.module).map(({ module, ...d }) => d),
       exact_contracts: old.engineering?.contracts || [] },
-    configuration_changes: { schema_version: '0.9', knowledge_structure: '2.0', remove_configuration_fields: ['sources.engineering', 'changes', 'records'],
+    configuration_changes: { schema_version: '0.10', knowledge_structure: '2.0', remove_configuration_fields: ['sources.engineering', 'changes', 'records'],
       policies: ['.accord/documentation-policy.yaml', '.accord/governance.yaml'] },
     instruction: 'Resolve collisions, merge reviewed policies/config/runtime from the chosen release, preserve original evidence in Git, and apply the registry and config together. No source files, history or approvals have been changed.' };
 }
@@ -64,10 +82,14 @@ export function planKnowledgeMigration(root, config = readJson(root, '.accord/ac
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   try {
     const args = process.argv.slice(2);
-    if (args[0] === '--help') console.log('accord-migrate.mjs --project DIR: print a one-way migration proposal; the adoption agent applies reviewed edits and removes retired owners.');
+    if (args[0] === '--help') console.log('accord-migrate.mjs --project DIR [--vv | --work FILE]: print a one-way knowledge or V&V migration proposal.');
     else {
-      if (args.length !== 2 || args[0] !== '--project') throw new Error('Expected --project DIR.');
-      console.log(JSON.stringify(planKnowledgeMigration(args[1]), null, 2));
+      if (args[0] !== '--project' || !args[1]) throw new Error('Expected --project DIR.');
+      let result;
+      if (args.length === 2) result = planKnowledgeMigration(args[1]);
+      else if ((args.length === 3 && args[2] === '--vv') || (args.length === 4 && args[2] === '--work')) result = planVvMigration(readJson(args[1], '.accord/accord.yaml'), args[2] === '--work' ? readJson(args[1], args[3]) : null);
+      else throw new Error('Expected --vv or --work FILE.');
+      console.log(JSON.stringify(result, null, 2));
     }
   } catch (e) { console.error(e.message); process.exitCode = 1; }
 }

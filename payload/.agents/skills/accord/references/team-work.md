@@ -1,6 +1,6 @@
 # Work carriers, baselines and authority
 
-Use configuration 0.9. Issue/PR or local work are the current carriers.
+Use configuration 0.10. Issue/PR or local work are the current carriers.
 Migrate retired Change/Record content into current owners and work references,
 then remove retired working-tree files; Git retains historical versions.
 
@@ -40,18 +40,15 @@ direction can change the baseline; reconcile only affected requirements.
     node .agents/skills/accord/scripts/accord-work.mjs --project . --baseline docs/requirements.md
 
 This returns a base commit and hashes, without writing. A local work record
-has schema `1.0`, unique `id`, `title`, `state` (`active|blocked|closed`),
+has schema `1.1`, unique `id`, `title`, `state` (`active|blocked|closed`),
 `risk`, `modules`, `requirements`, and this `baseline`. Material work records
 an inspectable `decision_basis`; L3/L4 additionally needs a resolvable
-`checkpoint_revision`, L4 an `execution_basis`. Delivery adds `evidence`
-entries with `kind` (`verification|validation|review`), `source`, `revision`,
-`result` (`passed|failed|unavailable|not-run`), `environment`, literal `inputs` and an actual `observation` from
-`accord-scope --paths`. Delivery verifies the commit and matching input digest;
-material delivery needs both verification and validation. Selected delivery
-evidence must have passed; keep earlier failed attempts in linked logs, not as
-current passing evidence. Runtime environment
-and semantic sufficiency still need inspection. These are
-claims to inspect, not proof from labels alone.
+`checkpoint_revision`, L4 an `execution_basis`. Delivery adds obligations,
+shared evidence and a current scope review as defined in `vv-contract.md`.
+Each necessary obligation needs valid evidence or justified applicability;
+one execution can serve both V purposes. Review is an evidence method.
+Historical failures remain inspectable while current repaired evidence can pass.
+Human acceptance and semantic sufficiency cannot be established by labels alone.
 
     node .agents/skills/accord/scripts/accord-validate.mjs --project . --scope delivery --work .accord/work/WORK-ID.json --modules orders
 

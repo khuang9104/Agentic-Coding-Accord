@@ -5,7 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { digest, readBytes, readJson, gitRead, relativePath, strings, SHA } from './accord-project.mjs';
 import { githubApi } from './accord-governance.mjs';
-import { captureObservation } from './accord-scope.mjs';
+import { validateObligations } from './accord-vv.mjs';
 import { validateMethodUse } from './accord-protocol.mjs';
 
 export function captureBaseline(root, inputPaths = []) {
@@ -32,9 +32,9 @@ export function compareBaseline(root, baseline) {
 
 const nonempty = value => typeof value === 'string' && Boolean(value.trim());
 
-export function validateWorkItem(root, work, { delivery = false } = {}) {
+export function validateWorkItem(root, work, { delivery = false, config, model } = {}) {
   const errors = [], warnings = [];
-  if (!work || work.schema_version !== '1.0' || !/^[A-Za-z0-9][A-Za-z0-9._:#/-]{0,255}$/.test(work.id || '') ||
+  if (!work || work.schema_version !== '1.1' || !/^[A-Za-z0-9][A-Za-z0-9._:#/-]{0,255}$/.test(work.id || '') ||
       !nonempty(work.title) || !['active', 'blocked', 'closed'].includes(work.state) || !strings(work.modules) ||
       !strings(work.requirements) || !['L0', 'L1', 'L2', 'L3', 'L4'].includes(work.risk)) return { errors: ['Invalid work item identity, state, scope or risk.'], warnings };
   let baseline;
@@ -48,29 +48,17 @@ export function validateWorkItem(root, work, { delivery = false } = {}) {
   if (work.risk === 'L4' && !nonempty(work.execution_basis)) errors.push('L4 execution needs distinct explicit human execution authority.');
   if (work.method_use !== undefined) errors.push(...validateMethodUse(work.method_use, delivery ? 'delivery' : 'task'));
   if (delivery) {
-    const evidence = Array.isArray(work.evidence) ? work.evidence : [];
-    if (!evidence.length) errors.push('Delivery requires scoped verification/validation evidence.');
-    if (['L2', 'L3', 'L4'].includes(work.risk) && ['verification', 'validation'].some(kind => !evidence.some(e => e?.kind === kind))) errors.push('Material delivery requires both verification and validation evidence.');
-    for (const e of evidence) {
-      if (!e || !['verification', 'validation', 'review'].includes(e.kind) || !nonempty(e.source) || !SHA.test(e.revision || '') ||
-          !['passed', 'failed', 'unavailable', 'not-run'].includes(e.result)) {
-        errors.push('Evidence requires kind, source, actual revision and a known result (passed|failed|unavailable|not-run).'); continue;
-      }
-      if (e.result !== 'passed') errors.push('Delivery evidence has not passed: ' + e.kind + ' (' + e.result + ').');
-      try {
-        gitRead(root, ['cat-file', '-e', e.revision + '^{commit}']);
-        if (!nonempty(e.environment) || !e.observation || e.observation.base_revision !== e.revision ||
-            captureObservation(root, e.inputs).digest !== e.observation.digest) throw new Error('Evidence input observation is missing/stale or its environment is unspecified.');
-      } catch (error) { errors.push(error.message); }
-    }
+    try { errors.push(...validateObligations(root, work, { config, model }).errors); }
+    catch (e) { errors.push(e.message); }
   }
+
   warnings.push('Recorded decision/evidence fields are inspectable claims, not authenticated human approval or semantic proof.');
   return { errors, warnings, baseline, id: work.id, notChecked: ['human-identity', 'semantic-impact', 'test-sufficiency'] };
 }
 
 export function indexLocalWork(root, { modules = [], requirements = [], history = false } = {}) {
   const config = readJson(root, '.accord/accord.yaml');
-  if (config.schema_version !== '0.9') throw new Error('Migrate configuration before querying current work.');
+  if (config.schema_version !== '0.10') throw new Error('Migrate configuration before querying current work.');
   if (!strings(modules) || !strings(requirements)) throw new Error('Invalid work selection.');
   const entries = [], gaps = [], seenIds = new Set();
   const directory = config.work?.local_directory || '.accord/work';
@@ -83,7 +71,7 @@ export function indexLocalWork(root, { modules = [], requirements = [], history 
       const owner = dir + '/' + file.name;
       try {
         const w = readJson(root, owner);
-        if (w.schema_version !== '1.0' || typeof w.id !== 'string' || !w.id || !w.title?.trim() || !['active', 'blocked', 'closed'].includes(w.state) || !strings(w.modules) || !strings(w.requirements)) throw new Error('Invalid work metadata');
+        if (w.schema_version !== '1.1' || typeof w.id !== 'string' || !w.id || !w.title?.trim() || !['active', 'blocked', 'closed'].includes(w.state) || !strings(w.modules) || !strings(w.requirements)) throw new Error('Invalid work metadata');
         if (seenIds.has(w.id)) throw new Error('Duplicate work identity: ' + w.id);
         seenIds.add(w.id);
         if ((!history && w.state === 'closed') || (modules.length && !w.modules.some(m => modules.includes(m))) || (requirements.length && !w.requirements.some(r => requirements.includes(r)))) continue;
